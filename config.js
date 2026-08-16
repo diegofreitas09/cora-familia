@@ -1,0 +1,1 @@
+window.CORA_CONFIG={escola:{nome:'Colégio Cora Coralina',lema:'A escola ideal para o seu filho.',endereco:'R. 729, 360 - Conjunto Ceará I, Fortaleza - CE',telefone:'8532940228',telefoneExibicao:'(85) 3294-0228',instagram:'colegio_cora_coralina',whatsapp:'',whatsappExibicao:'WhatsApp da escola'},feedbackEndpoint:''};

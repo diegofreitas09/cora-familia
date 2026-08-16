@@ -1,0 +1,5 @@
+CORA FAMÍLIA V1
+
+Já funciona: PWA, valores 2026, orçamento dinâmico, compartilhamento, história, telefone, Instagram e avaliação local.
+
+Para concluir: confirmar WhatsApp e preencher config.js; conectar feedbackEndpoint ao Google Sheets usando GOOGLE_SHEETS_APPS_SCRIPT.js; publicar no GitHub Pages.
