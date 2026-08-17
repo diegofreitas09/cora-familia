@@ -1,1 +1,0 @@
-A correção binária da fachada está em andamento.
