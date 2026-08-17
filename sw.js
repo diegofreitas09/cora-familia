@@ -1,5 +1,5 @@
-const C='cora-familia-v17';
-const A=['./','./index.html','./app.css','./app.js','./config.js','./data.js','./manifest.webmanifest','./logo-escola.png','./icon-192.png','./icon-512.png','./apple-touch-icon.png','./fachada-chunk-01.txt','./fachada-chunk-02.txt','./fachada-chunk-03.txt','./fachada-chunk-04.txt'];
+const C='cora-familia-v19';
+const A=['./','./index.html','./app.css','./app.js','./config.js','./data.js','./manifest.webmanifest','./logo-escola.png','./icon-192.png','./icon-512.png','./apple-touch-icon.png','./fachada-cora-familia.jpg'];
 
 self.addEventListener('install',e=>{
   self.skipWaiting();
@@ -14,11 +14,12 @@ self.addEventListener('activate',e=>{
 });
 
 self.addEventListener('fetch',e=>{
+  if(e.request.method!=='GET') return;
   e.respondWith(
     fetch(e.request).then(r=>{
       const clone=r.clone();
       caches.open(C).then(c=>c.put(e.request,clone));
       return r;
-    }).catch(()=>caches.match(e.request))
+    }).catch(()=>caches.match(e.request).then(r=>r||caches.match('./index.html')))
   );
 });
