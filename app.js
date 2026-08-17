@@ -114,10 +114,6 @@ function enhanceContacts(){
   if(q('waText')) q('waText').textContent=e.whatsappExibicao||'Fale conosco pelo WhatsApp';
   if(q('waLink')){q('waLink').href='https://wa.me/'+String(e.whatsapp||'');q('waLink').target='_blank';}
   if(q('addressText')) q('addressText').textContent=e.endereco||'';
-  const insta=q('instaLink')?.querySelector('.ico');
-  if(insta){insta.innerHTML=`<svg viewBox="0 0 48 48" width="46" height="46" aria-hidden="true"><defs><linearGradient id="igG" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#ffd600"/><stop offset=".32" stop-color="#ff7a00"/><stop offset=".58" stop-color="#ff0169"/><stop offset=".82" stop-color="#d300c5"/><stop offset="1" stop-color="#7638fa"/></linearGradient></defs><rect x="3" y="3" width="42" height="42" rx="12" fill="url(#igG)"/><rect x="13" y="13" width="22" height="22" rx="7" fill="none" stroke="#fff" stroke-width="3"/><circle cx="24" cy="24" r="5.5" fill="none" stroke="#fff" stroke-width="3"/><circle cx="32.5" cy="15.8" r="2" fill="#fff"/></svg>`;insta.style.background='transparent';}
-  const wa=q('waLink')?.querySelector('.ico');
-  if(wa){wa.innerHTML=`<svg viewBox="0 0 32 32" width="46" height="46" aria-hidden="true"><path fill="#25D366" d="M16 3C8.82 3 3 8.73 3 15.8c0 2.5.73 4.93 2.1 7L3.5 29l6.44-1.68A13.1 13.1 0 0 0 16 28.6c7.18 0 13-5.73 13-12.8S23.18 3 16 3z"/><path fill="#fff" d="M23.03 19.16c-.38-.19-2.22-1.08-2.57-1.2-.34-.13-.6-.19-.85.19-.26.38-.98 1.2-1.2 1.44-.22.25-.44.28-.82.1-.38-.19-1.6-.58-3.05-1.86-1.13-.99-1.9-2.22-2.12-2.6-.22-.38-.02-.58.16-.77.16-.16.38-.41.57-.6.19-.19.25-.32.38-.54.13-.22.06-.41-.03-.6-.09-.19-.85-2.02-1.16-2.77-.31-.74-.63-.64-.85-.65h-.72c-.25 0-.66.09-1 .44-.35.35-1.32 1.28-1.32 3.11 0 1.83 1.35 3.6 1.54 3.85.19.25 2.63 4.2 6.5 5.72.92.39 1.64.62 2.2.79.92.29 1.76.25 2.42.15.74-.11 2.22-.91 2.53-1.79.31-.88.31-1.63.22-1.79-.1-.16-.35-.25-.72-.44z"/></svg>`;wa.style.background='transparent';}
 }
 function setupFeedback(){
   document.querySelectorAll('.star').forEach(st=>st.onclick=()=>{
@@ -127,7 +123,16 @@ function setupFeedback(){
   if(q('sendFeedback')) q('sendFeedback').onclick=async()=>{
     const status=q('feedbackStatus');
     if(!state.feedbackStars){status.textContent='Escolha de 1 a 5 estrelas.';return;}
-    const payload={nome:q('fbNome')?.value||'',funcionario:q('fbFuncionario')?.value||'',canal:q('fbCanal')?.value||'',estrelas:state.feedbackStars,mensagem:q('fbMsg')?.value||'',origem:'Cora Família'};
+    const nomeResponsavel=q('fbNome')?.value||'';
+    const payload={
+      responsavel:nomeResponsavel,
+      nome:nomeResponsavel,
+      funcionario:q('fbFuncionario')?.value||'',
+      canal:q('fbCanal')?.value||'',
+      estrelas:state.feedbackStars,
+      mensagem:q('fbMsg')?.value||'',
+      origem:'Cora Família'
+    };
     try{
       status.textContent='Enviando...';
       await fetch(CORA_CONFIG.feedbackEndpoint,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
@@ -154,54 +159,19 @@ function downloadPdf(){
   if(c.includeFirst&&!c.includeAnnual) rows.push(['1ª parcela',1,c.primeira,c.primeira]);
   if(c.includeMat) rows.push(['Livros / material didático',1,c.material,c.material]);
   c.uniformes.forEach(u=>rows.push([u.item,u.qt,u.unit,u.sub]));
-  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Orçamento Cora Família</title><style>body{font-family:Arial;margin:35px;color:#0b2e56}header{display:flex;align-items:center;border-bottom:3px solid #0f5ea8;padding-bottom:12px}header img{width:70px;margin-right:15px}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{padding:10px;border-bottom:1px solid #ddd;text-align:left}th{background:#0b3564;color:#fff}.total{font-size:22px;font-weight:800;text-align:right;margin-top:20px}.note{margin-top:25px;font-size:12px;color:#555}</style></head><body><header><img src="logo-escola.png"><div><b>COLÉGIO CORA CORALINA</b><h2>Cora Família — Orçamento 2026</h2></div></header><p><b>Série/segmento:</b> ${c.s.nome}<br><b>Plano:</b> ${c.plano==='A'?'Plano A':'Plano B'}<br><b>Condição:</b> ${c.cond==='ate'?'Até o vencimento':'Após o vencimento'}<br><b>Itens selecionados:</b> ${c.count}<br><b>Data:</b> ${new Date().toLocaleString('pt-BR')}</p><table><thead><tr><th>Item</th><th>Qtde</th><th>Unitário</th><th>Subtotal</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${money(r[2])}</td><td>${money(r[3])}</td></tr>`).join('')}</tbody></table><div class="total">Total estimado: ${money(c.total)}</div><div class="note">Simulação informativa com valores de referência de 2026. Consulte a escola para confirmação das condições vigentes.</div><script>window.onload=()=>window.print()<\/script></body></html>`;
-  const w=window.open('','_blank');
-  if(!w){alert('Permita pop-ups para gerar o PDF.');return;}
-  w.document.open();w.document.write(html);w.document.close();
-}
-function resetBudgetState(){
-  Object.keys(state.uniformQty).forEach(k=>state.uniformQty[k]=0);
-  if(q('anuidadeCheck')) q('anuidadeCheck').checked=false;
-  if(q('primeiraCheck')) q('primeiraCheck').checked=false;
-  if(q('materialCheck')) q('materialCheck').checked=false;
-  if(q('serieSel')) q('serieSel').selectedIndex=0;
-  if(q('planoSel')) q('planoSel').value='A';
-  if(q('condSel')) q('condSel').value='ate';
-  renderBudget();
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Orçamento Cora Família</title></head><body><h2>Cora Família — Orçamento 2026</h2><p><b>Série:</b> ${c.s.nome}<br><b>Total estimado:</b> ${money(c.total)}</p><table border="1" cellspacing="0" cellpadding="8"><tr><th>Item</th><th>Qtde</th><th>Unitário</th><th>Subtotal</th></tr>${rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${money(r[2])}</td><td>${money(r[3])}</td></tr>`).join('')}</table><script>window.onload=()=>window.print()<\/script></body></html>`;
+  const w=window.open('','_blank');w.document.open();w.document.write(html);w.document.close();
 }
 function init(){
   fillSeries();
-  resetBudgetState();
-  renderValues();
-  enhanceContacts();
-  setupFeedback();
-  ['serieSel','planoSel','condSel','anuidadeCheck','primeiraCheck','materialCheck'].forEach(id=>q(id)?.addEventListener('change',()=>{
-    if(id==='serieSel'){
-      Object.keys(state.uniformQty).forEach(k=>state.uniformQty[k]=0);
-    }
-    renderBudget();
-  }));
+  if(q('anuidadeCheck')) q('anuidadeCheck').checked=false;
+  if(q('primeiraCheck')) q('primeiraCheck').checked=false;
+  if(q('materialCheck')) q('materialCheck').checked=false;
+  renderValues();enhanceContacts();setupFeedback();
+  ['serieSel','planoSel','condSel','anuidadeCheck','primeiraCheck','materialCheck'].forEach(id=>q(id)?.addEventListener('change',renderBudget));
   if(q('shareQuote')) q('shareQuote').onclick=shareBudget;
   if(q('downloadQuotePdf')) q('downloadQuotePdf').onclick=downloadPdf;
   renderBudget();
 }
 init();
-
-if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
-}
-let deferredPrompt;
-const installBtn=q('installBtn');
-window.addEventListener('beforeinstallprompt',e=>{
-  e.preventDefault();
-  deferredPrompt=e;
-  if(installBtn) installBtn.hidden=false;
-});
-if(installBtn) installBtn.onclick=async()=>{
-  if(!deferredPrompt) return;
-  deferredPrompt.prompt();
-  await deferredPrompt.userChoice;
-  deferredPrompt=null;
-  installBtn.hidden=true;
-};
-window.addEventListener('appinstalled',()=>{if(installBtn) installBtn.hidden=true;});
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));
