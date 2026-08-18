@@ -152,15 +152,35 @@ function shareBudget(){
   if(navigator.share) navigator.share({title:'Cora Família',text:txt}).catch(()=>{});
   else navigator.clipboard?.writeText(txt).then(()=>alert('Resumo copiado.'));
 }
-function downloadPdf(){
-  const c=calcBudget();
-  const rows=[];
-  if(c.includeAnnual) rows.push(['Anuidade',1,c.anuidade,c.anuidade]);
-  if(c.includeFirst&&!c.includeAnnual) rows.push(['1ª parcela',1,c.primeira,c.primeira]);
-  if(c.includeMat) rows.push(['Livros / material didático',1,c.material,c.material]);
-  c.uniformes.forEach(u=>rows.push([u.item,u.qt,u.unit,u.sub]));
-  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Orçamento Cora Família</title></head><body><h2>Cora Família — Orçamento 2026</h2><p><b>Série:</b> ${c.s.nome}<br><b>Total estimado:</b> ${money(c.total)}</p><table border="1" cellspacing="0" cellpadding="8"><tr><th>Item</th><th>Qtde</th><th>Unitário</th><th>Subtotal</th></tr>${rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${money(r[2])}</td><td>${money(r[3])}</td></tr>`).join('')}</table><script>window.onload=()=>window.print()<\/script></body></html>`;
-  const w=window.open('','_blank');w.document.open();w.document.write(html);w.document.close();
+async function downloadPdf(){
+  const btn=q('downloadQuotePdf');
+  const original=btn?btn.innerHTML:'';
+  try{
+    if(btn){btn.disabled=true;btn.textContent='Carregando gerador de PDF...';}
+    let script=document.querySelector('script[data-cora-pdf-download]');
+    if(!script){
+      await new Promise((resolve,reject)=>{
+        script=document.createElement('script');
+        script.src='pdf-download.js?v=2';
+        script.async=true;
+        script.dataset.coraPdfDownload='1';
+        script.onload=resolve;
+        script.onerror=()=>reject(new Error('Falha ao carregar PDF'));
+        document.body.appendChild(script);
+      });
+    }else{
+      await new Promise(resolve=>setTimeout(resolve,80));
+    }
+    if(btn){
+      btn.disabled=false;
+      btn.innerHTML=original;
+      setTimeout(()=>btn.click(),50);
+    }
+  }catch(e){
+    console.error(e);
+    if(btn){btn.disabled=false;btn.innerHTML=original;}
+    alert('Não foi possível carregar o gerador de PDF. Tente novamente.');
+  }
 }
 function init(){
   fillSeries();
