@@ -1,4 +1,4 @@
-const C='cora-familia-v22';
+const C='cora-familia-v23';
 const A=['./','./index.html','./app.css','./app.js','./auth.js','./config.js','./data.js','./manifest.webmanifest','./logo-escola.png','./icon-192.png','./icon-512.png','./apple-touch-icon.png','./fachada-cora-familia.jpg'];
 
 self.addEventListener('install',e=>{
