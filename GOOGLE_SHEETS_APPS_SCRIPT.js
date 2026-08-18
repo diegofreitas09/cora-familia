@@ -1,6 +1,6 @@
 // ============================================================
 // CORA FAMÍLIA — BACKEND GOOGLE APPS SCRIPT
-// Famílias: validação 2 de 3 + acesso por chave mestre de funcionário
+// Famílias: quaisquer 2 de 3 campos + chave de funcionário
 // ============================================================
 
 function normalizarTexto_(valor) {
@@ -23,18 +23,11 @@ function doGet(e) {
     const callback=p.callback||'';
     const ss=SpreadsheetApp.getActiveSpreadsheet();
 
-    // ========================================================
-    // ACESSO POR CHAVE MESTRE DE FUNCIONÁRIO
-    // Aba Funcionários: A Funcionário | B Chave Mestre | C Status
-    //                  D Último uso | E Qtd. usos | F Observação
-    // ========================================================
     if (p.action==='validarChaveFuncionario') {
       const chave=String(p.chave||'').trim();
       if (!chave) return respostaJson_({ok:false,autorizado:false,mensagem:'Informe a chave do funcionário.'},callback);
-
       const aba=ss.getSheetByName('Funcionários');
       if (!aba || aba.getLastRow()<2) return respostaJson_({ok:true,autorizado:false,mensagem:'Nenhuma chave de funcionário está cadastrada.'},callback);
-
       const dados=aba.getRange(2,1,aba.getLastRow()-1,6).getValues();
       for (let i=0;i<dados.length;i++) {
         const funcionario=String(dados[i][0]||'').trim();
@@ -50,15 +43,12 @@ function doGet(e) {
       return respostaJson_({ok:true,autorizado:false,mensagem:'Chave de funcionário inválida.'},callback);
     }
 
-    // ========================================================
-    // ACESSO DA FAMÍLIA — pelo menos 2 de 3 informações
-    // ========================================================
     if (p.action==='validarAcesso') {
       const matricula=normalizarTexto_(p.matricula);
       const nome=normalizarTexto_(p.nome);
       const serie=normalizarSerie_(p.serie);
-
-      if (!matricula||!nome||!serie) return respostaJson_({ok:false,autorizado:false,mensagem:'Preencha matrícula, nome completo do aluno e série/turma.'},callback);
+      const preenchidos=[matricula,nome,serie].filter(Boolean).length;
+      if (preenchidos<2) return respostaJson_({ok:false,autorizado:false,mensagem:'Preencha pelo menos duas informações para validar.'},callback);
 
       const aba=ss.getSheetByName('Acessos');
       if (!aba) return respostaJson_({ok:false,autorizado:false,mensagem:'Base de acessos não encontrada.'},callback);
@@ -73,9 +63,9 @@ function doGet(e) {
         const seriePlanilha=normalizarSerie_(dados[i][2]);
         const status=normalizarTexto_(dados[i][4]);
         let pontos=0;
-        if (matPlanilha===matricula) pontos++;
-        if (nomePlanilha===nome) pontos++;
-        if (seriePlanilha===serie) pontos++;
+        if (matricula && matPlanilha===matricula) pontos++;
+        if (nome && nomePlanilha===nome) pontos++;
+        if (serie && seriePlanilha===serie) pontos++;
         if (!melhor||pontos>melhor.pontos) melhor={indice:i,linha:i+2,pontos,status};
 
         if (pontos>=2&&status==='ATIVO') {
@@ -89,7 +79,7 @@ function doGet(e) {
         aba.getRange(melhor.linha,7).setValue((Number(dados[melhor.indice][6])||0)+1);
         if (melhor.pontos>=2&&melhor.status!=='ATIVO') return respostaJson_({ok:true,autorizado:false,mensagem:'Cadastro localizado, mas o acesso não está ativo. Procure a secretaria da escola.'},callback);
       }
-      return respostaJson_({ok:true,autorizado:false,mensagem:'Não foi possível confirmar pelo menos duas informações. Confira os dados e tente novamente.'},callback);
+      return respostaJson_({ok:true,autorizado:false,mensagem:'Não foi possível confirmar duas informações. Confira os dados e tente novamente.'},callback);
     }
 
     return respostaJson_({ok:true,servico:'Cora Família'},callback);
