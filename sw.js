@@ -1,5 +1,5 @@
-const C='cora-familia-v28';
-const A=['./','./index.html','./app.css','./app.js','./auth.js','./config.js','./data.js','./cora-gestao-sync-v27.js','./pdf-download.js','./manifest.webmanifest','./logo-escola.png','./icon-192.png','./icon-512.png','./apple-touch-icon.png','./fachada-cora-familia.jpg'];
+const C='cora-familia-v29';
+const A=['./','./index.html','./app.css','./app.js','./auth.js','./config.js','./data.js','./cora-gestao-sync-v27.js','./orcamento-primeira-fix-v29.js','./pdf-download.js','./manifest.webmanifest','./logo-escola.png','./icon-192.png','./icon-512.png','./apple-touch-icon.png','./fachada-cora-familia.jpg'];
 
 self.addEventListener('install',e=>{
   self.skipWaiting();
@@ -23,6 +23,8 @@ self.addEventListener('fetch',e=>{
         let html=await r.text();
         if(!html.includes('cora-gestao-sync-v27.js')) html=html.replace('</body>',"<script src='cora-gestao-sync-v27.js?v=2'></script></body>");
         else html=html.replace(/cora-gestao-sync-v27\.js(?:\?v=\d+)?/g,'cora-gestao-sync-v27.js?v=2');
+        if(!html.includes('orcamento-primeira-fix-v29.js')) html=html.replace('</body>',"<script src='orcamento-primeira-fix-v29.js?v=1'></script></body>");
+        else html=html.replace(/orcamento-primeira-fix-v29\.js(?:\?v=\d+)?/g,'orcamento-primeira-fix-v29.js?v=1');
         if(!html.includes('pdf-download.js')) html=html.replace('</body>',"<script src='pdf-download.js?v=2'></script></body>");
         const out=new Response(html,{status:r.status,statusText:r.statusText,headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store, no-cache, must-revalidate'}});
         caches.open(C).then(c=>c.put(e.request,out.clone())).catch(()=>{});
@@ -31,7 +33,7 @@ self.addEventListener('fetch',e=>{
         if(!r)return caches.match('./index.html');
         let html=await r.text();
         if(!html.includes('cora-gestao-sync-v27.js')) html=html.replace('</body>',"<script src='cora-gestao-sync-v27.js?v=2'></script></body>");
-        else html=html.replace(/cora-gestao-sync-v27\.js(?:\?v=\d+)?/g,'cora-gestao-sync-v27.js?v=2');
+        if(!html.includes('orcamento-primeira-fix-v29.js')) html=html.replace('</body>',"<script src='orcamento-primeira-fix-v29.js?v=1'></script></body>");
         if(!html.includes('pdf-download.js')) html=html.replace('</body>',"<script src='pdf-download.js?v=2'></script></body>");
         return new Response(html,{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'}});
       }))
@@ -39,7 +41,7 @@ self.addEventListener('fetch',e=>{
     return;
   }
 
-  if(url.origin===self.location.origin&&['/app.js','/data.js','/cora-gestao-sync-v27.js'].some(x=>url.pathname.endsWith(x))){
+  if(url.origin===self.location.origin&&['/app.js','/data.js','/cora-gestao-sync-v27.js','/orcamento-primeira-fix-v29.js'].some(x=>url.pathname.endsWith(x))){
     e.respondWith(fetch(e.request,{cache:'no-store'}).catch(()=>caches.match(e.request)));
     return;
   }
