@@ -1,207 +1,41 @@
 (function(){
   const JSPDF_URL='https://unpkg.com/jspdf@4.2.1/dist/jspdf.umd.min.js';
-
-  function carregarJsPDF(){
-    return new Promise((resolve,reject)=>{
-      if(window.jspdf&&window.jspdf.jsPDF){resolve(window.jspdf.jsPDF);return;}
-      const existente=document.querySelector('script[data-cora-jspdf]');
-      if(existente){
-        existente.addEventListener('load',()=>resolve(window.jspdf.jsPDF),{once:true});
-        existente.addEventListener('error',()=>reject(new Error('Falha ao carregar gerador de PDF')),{once:true});
-        return;
-      }
-      const s=document.createElement('script');
-      s.src=JSPDF_URL;
-      s.async=true;
-      s.dataset.coraJspdf='1';
-      s.onload=()=>resolve(window.jspdf.jsPDF);
-      s.onerror=()=>reject(new Error('Falha ao carregar gerador de PDF'));
-      document.head.appendChild(s);
-    });
-  }
-
-  async function imagemParaDataURL(src){
-    const r=await fetch(src,{cache:'no-store'});
-    if(!r.ok) throw new Error('Logo não encontrada');
-    const b=await r.blob();
-    return await new Promise((resolve,reject)=>{
-      const fr=new FileReader();
-      fr.onload=()=>resolve(fr.result);
-      fr.onerror=reject;
-      fr.readAsDataURL(b);
-    });
-  }
-
-  function sessaoFamilia(){
-    try{return JSON.parse(localStorage.getItem('coraFamiliaAcessoV1')||'null')||{};}catch(e){return {};}
-  }
-
-  function dataHoraBR(){
-    return new Date().toLocaleString('pt-BR',{timeZone:'America/Fortaleza'});
-  }
-
-  function idDocumento(){
-    const d=new Date();
-    const p=n=>String(n).padStart(2,'0');
-    return 'CF-'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'-'+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds());
-  }
-
-  function moeda(n){
-    return 'R$ '+Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-  }
-
-  function nomeArquivo(c){
-    const base=(c&&c.s&&c.s.nome?c.s.nome:'orcamento').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-|-$/g,'').toLowerCase();
-    return 'Cora-Familia-Orcamento-'+base+'.pdf';
-  }
-
+  function carregarJsPDF(){return new Promise((resolve,reject)=>{if(window.jspdf&&window.jspdf.jsPDF){resolve(window.jspdf.jsPDF);return;}const existente=document.querySelector('script[data-cora-jspdf]');if(existente){existente.addEventListener('load',()=>resolve(window.jspdf.jsPDF),{once:true});existente.addEventListener('error',()=>reject(new Error('Falha ao carregar gerador de PDF')),{once:true});return;}const s=document.createElement('script');s.src=JSPDF_URL;s.async=true;s.dataset.coraJspdf='1';s.onload=()=>resolve(window.jspdf.jsPDF);s.onerror=()=>reject(new Error('Falha ao carregar gerador de PDF'));document.head.appendChild(s);});}
+  async function imagemParaDataURL(src){const r=await fetch(src,{cache:'no-store'});if(!r.ok)throw new Error('Logo não encontrada');const b=await r.blob();return await new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=()=>resolve(fr.result);fr.onerror=reject;fr.readAsDataURL(b);});}
+  function sessaoFamilia(){try{return JSON.parse(localStorage.getItem('coraFamiliaAcessoV1')||'null')||{};}catch(e){return {};}}
+  function dataHoraBR(){return new Date().toLocaleString('pt-BR',{timeZone:'America/Fortaleza'});}
+  function idDocumento(){const d=new Date();const p=n=>String(n).padStart(2,'0');return 'CF-'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'-'+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds());}
+  function moeda(n){return 'R$ '+Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+  function nomeArquivo(c){const base=(c&&c.s&&c.s.nome?c.s.nome:'orcamento').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-|-$/g,'').toLowerCase();return 'Cora-Familia-Orcamento-'+base+'-2027.pdf';}
+  function campo(id){return String(document.getElementById(id)?.value||'').trim();}
+  function idadeNascimento(v){if(!v)return'';const b=new Date(v+'T12:00:00');if(isNaN(b))return'';const h=new Date();let a=h.getFullYear()-b.getFullYear();const m=h.getMonth()-b.getMonth();if(m<0||(m===0&&h.getDate()<b.getDate()))a--;return Math.max(0,a);}
+  function dataBR(v){if(!v)return'—';const p=v.split('-');return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:v;}
   async function baixarOrcamentoPdf(){
-    const btn=document.getElementById('downloadQuotePdf');
-    const textoOriginal=btn?btn.innerHTML:'';
+    const btn=document.getElementById('downloadQuotePdf');const textoOriginal=btn?btn.innerHTML:'';
     try{
-      if(typeof calcBudget!=='function') throw new Error('Orçamento indisponível');
-      const c=calcBudget();
-      if(!c||c.count===0){alert('Selecione pelo menos um item antes de baixar o orçamento.');return;}
+      if(typeof calcBudget!=='function')throw new Error('Orçamento indisponível');
+      const c=calcBudget();if(!c||c.count===0){alert('Selecione pelo menos um item antes de baixar o orçamento.');return;}
       if(btn){btn.disabled=true;btn.textContent='Gerando PDF...';}
-
-      const jsPDF=await carregarJsPDF();
-      const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
-      const azul=[13,49,92], azul2=[15,94,168], cinza=[88,112,139], claro=[238,247,255];
-      const largura=210, margem=16;
-      let y=15;
-
-      try{
-        const logo=await imagemParaDataURL('logo-escola.png');
-        doc.addImage(logo,'PNG',margem,y,22,22,undefined,'FAST');
-      }catch(e){}
-
-      doc.setTextColor(...azul);
-      doc.setFont('helvetica','bold');
-      doc.setFontSize(15);
-      doc.text('COLÉGIO CORA CORALINA',42,y+7);
-      doc.setFontSize(20);
-      doc.text('Cora Família',42,y+16);
-      doc.setFont('helvetica','normal');
-      doc.setFontSize(8.5);
-      doc.setTextColor(...cinza);
-      const escola=(window.CORA_CONFIG&&CORA_CONFIG.escola)||{};
-      doc.text(escola.endereco||'R. 729, 360 - Conjunto Ceará I, Fortaleza - CE',42,y+22);
-      doc.text('Telefone: '+(escola.telefoneExibicao||'(85) 3294-0228')+'  •  Instagram: @'+String(escola.instagram||'colegio_cora_coralina').replace(/^@/,''),42,y+27);
-
-      y=48;
-      doc.setFillColor(...azul);
-      doc.roundedRect(margem,y,largura-(2*margem),17,3,3,'F');
-      doc.setTextColor(255,255,255);
-      doc.setFont('helvetica','bold');
-      doc.setFontSize(14);
-      doc.text('SIMULAÇÃO DE ORÇAMENTO 2026',margem+6,y+7);
-      doc.setFontSize(8.5);
-      doc.setFont('helvetica','normal');
-      doc.text('Documento gerado pelo Cora Família',margem+6,y+13);
-
-      y=72;
-      const sessao=sessaoFamilia();
-      const plano=c.plano==='A'?'Plano A — 1ª + 12 parcelas':'Plano B — 1ª + 11 parcelas';
-      const cond=c.cond==='ate'?'Até o vencimento':'Após o vencimento';
-      const docId=idDocumento();
-
-      doc.setTextColor(...azul);
-      doc.setFont('helvetica','bold');
-      doc.setFontSize(10);
-      doc.text('DADOS DO ORÇAMENTO',margem,y);
-      y+=6;
-      doc.setFillColor(...claro);
-      doc.roundedRect(margem,y,largura-(2*margem),34,2,2,'F');
-      doc.setFont('helvetica','normal');
-      doc.setFontSize(9);
-      doc.setTextColor(35,55,75);
-      const linhas=[
-        ['Nº do orçamento:',docId,'Data/Hora:',dataHoraBR()],
-        ['Aluno:',sessao.aluno||'—','Responsável:',sessao.responsavel||'—'],
-        ['Série/Turma:',c.s.nome||'—','Condição:',cond],
-        ['Plano:',plano,'Referência:','Valores 2026']
-      ];
-      linhas.forEach((r,i)=>{
-        const yy=y+7+(i*7);
-        doc.setFont('helvetica','bold');doc.text(r[0],margem+5,yy);
-        doc.setFont('helvetica','normal');doc.text(String(r[1]),margem+33,yy,{maxWidth:57});
-        doc.setFont('helvetica','bold');doc.text(r[2],margem+96,yy);
-        doc.setFont('helvetica','normal');doc.text(String(r[3]),margem+120,yy,{maxWidth:52});
-      });
-
-      y+=42;
-      doc.setFont('helvetica','bold');doc.setTextColor(...azul);doc.setFontSize(10);
-      doc.text('ITENS SELECIONADOS',margem,y);
-      y+=5;
-
-      const itens=[];
-      if(c.includeAnnual) itens.push(['Anuidade',1,c.anuidade,c.anuidade]);
-      if(c.includeFirst&&!c.includeAnnual) itens.push(['1ª parcela',1,c.primeira,c.primeira]);
-      if(c.includeMat) itens.push(['Livros / material didático',1,c.material,c.material]);
-      c.uniformes.forEach(u=>itens.push([u.item,u.qt,u.unit,u.sub]));
-
-      const col=[margem,margem+92,margem+112,margem+145];
-      doc.setFillColor(...azul2);doc.rect(margem,y,largura-(2*margem),8,'F');
-      doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(8.5);
-      doc.text('Item',col[0]+3,y+5.5);doc.text('Qtd.',col[1]+3,y+5.5);doc.text('Unitário',col[2]+3,y+5.5);doc.text('Subtotal',col[3]+3,y+5.5);
-      y+=8;
-      doc.setFont('helvetica','normal');doc.setTextColor(35,55,75);
-      itens.forEach((r,idx)=>{
-        if(y>250){doc.addPage();y=18;}
-        if(idx%2===0){doc.setFillColor(248,251,255);doc.rect(margem,y,largura-(2*margem),8,'F');}
-        doc.text(String(r[0]),col[0]+3,y+5.3,{maxWidth:86});
-        doc.text(String(r[1]),col[1]+5,y+5.3);
-        doc.text(moeda(r[2]),col[2]+3,y+5.3);
-        doc.text(moeda(r[3]),col[3]+3,y+5.3);
-        y+=8;
-      });
-
-      y+=5;
-      if(y>244){doc.addPage();y=18;}
-      doc.setFillColor(...azul);doc.roundedRect(margem+95,y,83,17,2,2,'F');
-      doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(10);
-      doc.text('TOTAL ESTIMADO',margem+101,y+7);
-      doc.setFontSize(15);doc.text(moeda(c.total),margem+174,y+12,{align:'right'});
-
-      y+=26;
-      doc.setTextColor(...azul);doc.setFont('helvetica','bold');doc.setFontSize(9.5);
-      doc.text('INFORMAÇÕES IMPORTANTES',margem,y);
-      y+=5;
-      doc.setFont('helvetica','normal');doc.setFontSize(8.3);doc.setTextColor(...cinza);
-      const aviso='Esta é uma simulação informativa de orçamento com valores de referência de 2026. O documento não comprova pagamento e não substitui contrato, boleto, recibo ou documento fiscal. Para confirmação de condições, vencimentos, disponibilidade de itens e formalização da matrícula, entre em contato com o Colégio Cora Coralina.';
-      const quebrado=doc.splitTextToSize(aviso,largura-(2*margem));
-      doc.text(quebrado,margem,y);
-      y+=quebrado.length*4+6;
-      doc.setDrawColor(190,210,230);doc.line(margem,y,largura-margem,y);
-      y+=6;
-      doc.setFont('helvetica','bold');doc.setTextColor(...azul);doc.setFontSize(8.5);
-      doc.text('Colégio Cora Coralina • Cora Família',margem,y);
-      doc.setFont('helvetica','normal');doc.setTextColor(...cinza);
-      doc.text((escola.telefoneExibicao||'(85) 3294-0228')+' • @'+String(escola.instagram||'colegio_cora_coralina').replace(/^@/,''),largura-margem,y,{align:'right'});
-
-      const paginas=doc.getNumberOfPages();
-      for(let i=1;i<=paginas;i++){
-        doc.setPage(i);
-        doc.setFontSize(7.5);doc.setTextColor(130,145,160);
-        doc.text('Gerado pelo Cora Família • '+docId,margem,291);
-        doc.text('Página '+i+' de '+paginas,largura-margem,291,{align:'right'});
-      }
-
-      doc.save(nomeArquivo(c));
-    }catch(e){
-      console.error(e);
-      alert('Não foi possível gerar o PDF agora. Tente novamente.');
-    }finally{
-      if(btn){btn.disabled=false;btn.innerHTML=textoOriginal;}
-    }
+      const jsPDF=await carregarJsPDF();const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
+      const azul=[13,49,92],azul2=[15,94,168],cinza=[88,112,139],claro=[238,247,255];const largura=210,margem=16;let y=15;
+      try{const logo=await imagemParaDataURL('logo-escola.png');doc.addImage(logo,'PNG',margem,y,22,22,undefined,'FAST');}catch(e){}
+      doc.setTextColor(...azul);doc.setFont('helvetica','bold');doc.setFontSize(15);doc.text('COLÉGIO CORA CORALINA',42,y+7);doc.setFontSize(20);doc.text('Cora Família',42,y+16);doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(...cinza);
+      const escola=(window.CORA_CONFIG&&CORA_CONFIG.escola)||{};doc.text(escola.endereco||'R. 729, 360 - Conjunto Ceará I, Fortaleza - CE',42,y+22);doc.text('Telefone: '+(escola.telefoneExibicao||'(85) 3294-0228')+'  •  Instagram: @'+String(escola.instagram||'colegio_cora_coralina').replace(/^@/,''),42,y+27);
+      y=48;doc.setFillColor(...azul);doc.roundedRect(margem,y,largura-(2*margem),17,3,3,'F');doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(14);doc.text('SIMULAÇÃO DE ORÇAMENTO 2027',margem+6,y+7);doc.setFontSize(8.5);doc.setFont('helvetica','normal');doc.text('Documento gerado pelo Cora Família',margem+6,y+13);
+      y=72;const sessao=sessaoFamilia();const responsavel=campo('orcResponsavel')||sessao.responsavel||'—';const aluno=campo('orcAluno')||sessao.aluno||'—';const nasc=campo('orcNascimento');const idade=idadeNascimento(nasc);const plano=c.plano==='A'?'Plano A — 1ª + 12 parcelas':'Plano B — 1ª + 11 parcelas';const cond=c.cond==='ate'?'Até o vencimento':'Após o vencimento';const docId=idDocumento();
+      doc.setTextColor(...azul);doc.setFont('helvetica','bold');doc.setFontSize(10);doc.text('DADOS DO ORÇAMENTO',margem,y);y+=6;doc.setFillColor(...claro);doc.roundedRect(margem,y,largura-(2*margem),41,2,2,'F');doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(35,55,75);
+      const linhas=[['Nº do orçamento:',docId,'Data/Hora:',dataHoraBR()],['Aluno:',aluno,'Responsável:',responsavel],['Nascimento:',dataBR(nasc),'Idade:',idade!==''?idade+' anos':'—'],['Série/Turma:',c.s.nome||'—','Condição:',cond],['Plano:',plano,'Referência:','Valores oficiais 2027']];
+      linhas.forEach((r,i)=>{const yy=y+7+(i*7);doc.setFont('helvetica','bold');doc.text(r[0],margem+5,yy);doc.setFont('helvetica','normal');doc.text(String(r[1]),margem+33,yy,{maxWidth:57});doc.setFont('helvetica','bold');doc.text(r[2],margem+96,yy);doc.setFont('helvetica','normal');doc.text(String(r[3]),margem+120,yy,{maxWidth:52});});
+      y+=49;doc.setFont('helvetica','bold');doc.setTextColor(...azul);doc.setFontSize(10);doc.text('ITENS SELECIONADOS',margem,y);y+=5;
+      const itens=[];if(c.includeAnnual)itens.push(['Anuidade',1,c.anuidade,c.anuidade]);if(c.includeFirst&&!c.includeAnnual)itens.push(['1ª parcela',1,c.primeira,c.primeira]);if(c.includeMat)itens.push(['Livros / material didático',1,c.material,c.material]);c.uniformes.forEach(u=>itens.push([u.item,u.qt,u.unit,u.sub]));
+      const col=[margem,margem+92,margem+112,margem+145];doc.setFillColor(...azul2);doc.rect(margem,y,largura-(2*margem),8,'F');doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.text('Item',col[0]+3,y+5.5);doc.text('Qtd.',col[1]+3,y+5.5);doc.text('Unitário',col[2]+3,y+5.5);doc.text('Subtotal',col[3]+3,y+5.5);y+=8;doc.setFont('helvetica','normal');doc.setTextColor(35,55,75);
+      itens.forEach((r,idx)=>{if(y>250){doc.addPage();y=18;}if(idx%2===0){doc.setFillColor(248,251,255);doc.rect(margem,y,largura-(2*margem),8,'F');}doc.text(String(r[0]),col[0]+3,y+5.3,{maxWidth:86});doc.text(String(r[1]),col[1]+5,y+5.3);doc.text(moeda(r[2]),col[2]+3,y+5.3);doc.text(moeda(r[3]),col[3]+3,y+5.3);y+=8;});
+      y+=5;if(y>244){doc.addPage();y=18;}doc.setFillColor(...azul);doc.roundedRect(margem+95,y,83,17,2,2,'F');doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(10);doc.text('TOTAL ESTIMADO',margem+101,y+7);doc.setFontSize(15);doc.text(moeda(c.total),margem+174,y+12,{align:'right'});
+      y+=26;doc.setTextColor(...azul);doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.text('INFORMAÇÕES IMPORTANTES',margem,y);y+=5;doc.setFont('helvetica','normal');doc.setFontSize(8.3);doc.setTextColor(...cinza);
+      const aviso='Esta é uma simulação informativa de orçamento com valores oficiais de referência de 2027. O documento não comprova pagamento e não substitui contrato, boleto, recibo ou documento fiscal. Para confirmação de condições, vencimentos, disponibilidade de itens e formalização da matrícula, entre em contato com o Colégio Cora Coralina.';const quebrado=doc.splitTextToSize(aviso,largura-(2*margem));doc.text(quebrado,margem,y);y+=quebrado.length*4+6;doc.setDrawColor(190,210,230);doc.line(margem,y,largura-margem,y);y+=6;doc.setFont('helvetica','bold');doc.setTextColor(...azul);doc.setFontSize(8.5);doc.text('Colégio Cora Coralina • Cora Família',margem,y);doc.setFont('helvetica','normal');doc.setTextColor(...cinza);doc.text((escola.telefoneExibicao||'(85) 3294-0228')+' • @'+String(escola.instagram||'colegio_cora_coralina').replace(/^@/,''),largura-margem,y,{align:'right'});
+      const paginas=doc.getNumberOfPages();for(let i=1;i<=paginas;i++){doc.setPage(i);doc.setFontSize(7.5);doc.setTextColor(130,145,160);doc.text('Gerado pelo Cora Família • '+docId,margem,291);doc.text('Página '+i+' de '+paginas,largura-margem,291,{align:'right'});}doc.save(nomeArquivo(c));
+    }catch(e){console.error(e);alert('Não foi possível gerar o PDF agora. Tente novamente.');}finally{if(btn){btn.disabled=false;btn.innerHTML=textoOriginal;}}
   }
-
-  function instalar(){
-    const btn=document.getElementById('downloadQuotePdf');
-    if(!btn)return;
-    btn.onclick=baixarOrcamentoPdf;
-  }
-
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(instalar,0));
-  else setTimeout(instalar,0);
+  function instalar(){const btn=document.getElementById('downloadQuotePdf');if(!btn)return;btn.onclick=baixarOrcamentoPdf;}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(instalar,0));else setTimeout(instalar,0);
 })();
