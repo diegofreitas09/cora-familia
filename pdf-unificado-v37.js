@@ -3,8 +3,17 @@
   const q=id=>document.getElementById(id);
   const moeda=n=>'R$ '+Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
   function campo(id){return String(q(id)?.value||'').trim()}
-  function idade(v){if(!v)return'';const b=new Date(v+'T12:00:00'),h=new Date();if(isNaN(b))return'';let a=h.getFullYear()-b.getFullYear(),m=h.getMonth()-b.getMonth();if(m<0||(m===0&&h.getDate()<b.getDate()))a--;return Math.max(0,a)}
-  function dataBR(v){if(!v)return'—';const p=v.split('-');return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:v}
+  function parseData(v){
+    const s=String(v||'').trim();let d,m,y;
+    if(/^\d{4}-\d{2}-\d{2}$/.test(s)){[y,m,d]=s.split('-').map(Number)}
+    else if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)){[d,m,y]=s.split('/').map(Number)}
+    else return null;
+    const dt=new Date(y,m-1,d,12,0,0);
+    if(dt.getFullYear()!==y||dt.getMonth()!==m-1||dt.getDate()!==d)return null;
+    return {dt,d,m,y};
+  }
+  function idade(v){const p=parseData(v);if(!p)return'';const b=p.dt,h=new Date();let a=h.getFullYear()-b.getFullYear(),m=h.getMonth()-b.getMonth();if(m<0||(m===0&&h.getDate()<b.getDate()))a--;return Math.max(0,a)}
+  function dataBR(v){const p=parseData(v);if(!p)return v||'—';const pad=n=>String(n).padStart(2,'0');return `${pad(p.d)}/${pad(p.m)}/${p.y}`}
   function agora(){return new Date().toLocaleString('pt-BR',{timeZone:'America/Fortaleza'})}
   function docId(){const d=new Date(),p=n=>String(n).padStart(2,'0');return 'CF-'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'-'+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())}
   function nomeArquivo(c){const b=(c?.s?.nome||'orcamento').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-|-$/g,'').toLowerCase();return `Cora-Familia-Orcamento-${b}-2027.pdf`}
@@ -22,19 +31,20 @@
     const responsavel=campo('orcResponsavel')||'—',aluno=campo('orcAluno')||'—',nasc=campo('orcNascimento'),obs=campo('orcObservacoes');
     const plano=c.plano==='A'?'Plano A — 1ª + 12 parcelas':'Plano B — 1ª + 11 parcelas',cond=c.cond==='ate'?'Até o vencimento':'Após o vencimento',id=opts.id||docId(),dataHora=opts.dataHora||agora();
     y=72;doc.setTextColor(...azul);doc.setFont('helvetica','bold');doc.setFontSize(10);doc.text('DADOS DO ORÇAMENTO',M,y);y+=6;doc.setFillColor(...claro);doc.roundedRect(M,y,L-2*M,41,2,2,'F');doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(35,55,75);
-    const linhas=[['Nº do orçamento:',id,'Data/Hora:',dataHora],['Aluno:',aluno,'Responsável:',responsavel],['Nascimento:',dataBR(nasc),'Idade:',idade(nasc)!==''?idade(nasc)+' anos':'—'],['Série/Turma:',c.s.nome||'—','Condição:',cond],['Plano:',plano,'Referência:','Valores oficiais 2027']];
-    linhas.forEach((r,i)=>{const yy=y+7+i*7;doc.setFont('helvetica','bold');doc.text(r[0],M+5,yy);doc.setFont('helvetica','normal');doc.text(String(r[1]),M+33,yy,{maxWidth:57});doc.setFont('helvetica','bold');doc.text(r[2],M+96,yy);doc.setFont('helvetica','normal');doc.text(String(r[3]),M+120,yy,{maxWidth:52})});
+    const i=idade(nasc);
+    const linhas=[['Nº do orçamento:',id,'Data/Hora:',dataHora],['Aluno:',aluno,'Responsável:',responsavel],['Nascimento:',dataBR(nasc),'Idade:',i!==''?i+' anos':'—'],['Série/Turma:',c.s.nome||'—','Condição:',cond],['Plano:',plano,'Referência:','Valores oficiais 2027']];
+    linhas.forEach((r,idx)=>{const yy=y+7+idx*7;doc.setFont('helvetica','bold');doc.text(r[0],M+5,yy);doc.setFont('helvetica','normal');doc.text(String(r[1]),M+33,yy,{maxWidth:57});doc.setFont('helvetica','bold');doc.text(r[2],M+96,yy);doc.setFont('helvetica','normal');doc.text(String(r[3]),M+120,yy,{maxWidth:52})});
     y+=49;doc.setTextColor(...azul);doc.setFont('helvetica','bold');doc.setFontSize(10);doc.text('CONDIÇÕES DO PLANO',M,y);y+=5;doc.setFillColor(245,249,253);doc.roundedRect(M,y,L-2*M,25,2,2,'F');doc.setTextColor(35,55,75);doc.setFontSize(9);
     doc.setFont('helvetica','bold');doc.text('1ª parcela',M+6,y+7);doc.text('Parcelas seguintes',M+66,y+7);doc.text('Anuidade',M+132,y+7);
     doc.setFont('helvetica','normal');doc.setFontSize(11);doc.text(moeda(c.primeira),M+6,y+16);doc.text(`${c.parcelas} × ${moeda(c.mensal)}`,M+66,y+16);doc.text(moeda(c.anuidade),M+132,y+16);
     y+=33;doc.setFont('helvetica','bold');doc.setTextColor(...azul);doc.setFontSize(10);doc.text('ITENS SELECIONADOS',M,y);y+=5;
     const itens=[];if(c.includeAnnual)itens.push(['Anuidade',1,c.anuidade,c.anuidade]);if(c.includeFirst&&!c.includeAnnual)itens.push(['1ª parcela',1,c.primeira,c.primeira]);if(c.includeMat)itens.push(['Livros / material didático',1,c.material,c.material]);c.uniformes.forEach(u=>itens.push([u.item,u.qt,u.unit,u.sub]));
     const col=[M,M+92,M+112,M+145];doc.setFillColor(...azul2);doc.rect(M,y,L-2*M,8,'F');doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.text('Item',col[0]+3,y+5.5);doc.text('Qtd.',col[1]+3,y+5.5);doc.text('Unitário',col[2]+3,y+5.5);doc.text('Subtotal',col[3]+3,y+5.5);y+=8;doc.setFont('helvetica','normal');doc.setTextColor(35,55,75);
-    itens.forEach((r,i)=>{if(y>245){doc.addPage();y=18}if(i%2===0){doc.setFillColor(248,251,255);doc.rect(M,y,L-2*M,8,'F')}doc.text(String(r[0]),col[0]+3,y+5.3,{maxWidth:86});doc.text(String(r[1]),col[1]+5,y+5.3);doc.text(moeda(r[2]),col[2]+3,y+5.3);doc.text(moeda(r[3]),col[3]+3,y+5.3);y+=8});
+    itens.forEach((r,idx)=>{if(y>245){doc.addPage();y=18}if(idx%2===0){doc.setFillColor(248,251,255);doc.rect(M,y,L-2*M,8,'F')}doc.text(String(r[0]),col[0]+3,y+5.3,{maxWidth:86});doc.text(String(r[1]),col[1]+5,y+5.3);doc.text(moeda(r[2]),col[2]+3,y+5.3);doc.text(moeda(r[3]),col[3]+3,y+5.3);y+=8});
     y+=5;if(y>238){doc.addPage();y=18}doc.setFillColor(...azul);doc.roundedRect(M+95,y,83,17,2,2,'F');doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(10);doc.text('TOTAL ESTIMADO',M+101,y+7);doc.setFontSize(15);doc.text(moeda(c.total),M+174,y+12,{align:'right'});y+=26;
     if(obs){doc.setTextColor(...azul);doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.text('OBSERVAÇÕES',M,y);y+=5;doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(35,55,75);const t=doc.splitTextToSize(obs,L-2*M);doc.text(t,M,y);y+=t.length*4+7}
     doc.setTextColor(...azul);doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.text('INFORMAÇÕES IMPORTANTES',M,y);y+=5;doc.setFont('helvetica','normal');doc.setFontSize(8.1);doc.setTextColor(...cinza);const aviso='Esta é uma simulação informativa com valores oficiais de referência de 2027. Não comprova pagamento e não substitui contrato, boleto, recibo ou documento fiscal.';const t=doc.splitTextToSize(aviso,L-2*M);doc.text(t,M,y);
-    const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);doc.setFontSize(7.5);doc.setTextColor(130,145,160);doc.text('Gerado pelo Cora Família • '+id,M,291);doc.text('Página '+i+' de '+pages,L-M,291,{align:'right'})}
+    const pages=doc.getNumberOfPages();for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFontSize(7.5);doc.setTextColor(130,145,160);doc.text('Gerado pelo Cora Família • '+id,M,291);doc.text('Página '+p+' de '+pages,L-M,291,{align:'right'})}
     const filename=opts.filename||nomeArquivo(c);
     if(opts.download!==false)doc.save(filename);
     const blob=doc.output('blob');
