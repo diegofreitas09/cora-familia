@@ -4,14 +4,24 @@
   const q=id=>document.getElementById(id);
   const safe=n=>Number.isFinite(Number(n))?Number(n):0;
   const uid=()=>`ORC-${Date.now()}-${Math.random().toString(36).slice(2,7).toUpperCase()}`;
-  function age(v){if(!v)return'';const b=new Date(v+'T12:00:00'),h=new Date();if(isNaN(b))return'';let a=h.getFullYear()-b.getFullYear(),m=h.getMonth()-b.getMonth();if(m<0||(m===0&&h.getDate()<b.getDate()))a--;return Math.max(0,a)}
-  function dateBR(v){if(!v)return'';const [y,m,d]=v.split('-');return d&&m&&y?`${d}/${m}/${y}`:v}
+  function parseData(v){
+    const s=String(v||'').trim();let d,m,y;
+    if(/^\d{4}-\d{2}-\d{2}$/.test(s)){[y,m,d]=s.split('-').map(Number)}
+    else if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)){[d,m,y]=s.split('/').map(Number)}
+    else return null;
+    const dt=new Date(y,m-1,d,12,0,0);
+    if(dt.getFullYear()!==y||dt.getMonth()!==m-1||dt.getDate()!==d)return null;
+    return {dt,d,m,y};
+  }
+  function age(v){const p=parseData(v);if(!p)return'';const b=p.dt,h=new Date();let a=h.getFullYear()-b.getFullYear(),m=h.getMonth()-b.getMonth();if(m<0||(m===0&&h.getDate()<b.getDate()))a--;return Math.max(0,a)}
+  function dateBR(v){const p=parseData(v);if(!p)return String(v||'');const pad=n=>String(n).padStart(2,'0');return `${pad(p.d)}/${pad(p.m)}/${p.y}`}
   async function post(payload){await fetch(API,{method:'POST',mode:'no-cors',cache:'no-store',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})}
   async function confirmar(id){for(let i=0;i<4;i++){await new Promise(r=>setTimeout(r,700));try{const r=await fetch(API+'?action=listar&aba='+encodeURIComponent(SHEET)+'&_='+Date.now(),{cache:'no-store'}),j=await r.json(),rows=Array.isArray(j.rows)?j.rows:[];if(rows.some(x=>String(x.ID||'')===id))return rows.length}catch(e){}}return false}
   async function salvar(){
     const st=q('orcSaveStatus'),btn=q('saveQuote');
     const responsavel=(q('orcResponsavel')?.value||'').trim(),aluno=(q('orcAluno')?.value||'').trim(),nasc=q('orcNascimento')?.value||'',obs=(q('orcObservacoes')?.value||'').trim();
     if(!responsavel||!aluno||!nasc){if(st){st.className='orc-status err';st.textContent='Preencha responsável, aluno e data de nascimento.'}return}
+    if(!parseData(nasc)){if(st){st.className='orc-status err';st.textContent='Informe uma data de nascimento válida no formato DD/MM/AAAA.'}return}
     if(typeof window.calcBudget!=='function'){if(st)st.textContent='Orçamento indisponível.';return}
     const c=window.calcBudget(),id=uid(),dataHora=new Date().toLocaleString('pt-BR',{timeZone:'America/Fortaleza'});
     if(!c||c.count===0){if(st){st.className='orc-status err';st.textContent='Selecione pelo menos um item.'}return}
