@@ -1,6 +1,6 @@
 (function(){
   const API='https://script.google.com/macros/s/AKfycbwSpAtBgMjFyQ7J5yUxIfobEt0CxCGNgWEQZxp-mj9z-9zfWIcV2ig9iQlGzcCL5UYk/exec';
-  const CACHE='cora_familia_valores_oficiais_v28';
+  const CACHE='cora_familia_valores_oficiais_v29';
   const SEGMENTS=['Educação Infantil','Fundamental I','Fundamental II','Ensino Médio'];
   function num(v){
     if(typeof v==='number') return Number.isFinite(v)?v:0;
@@ -28,7 +28,7 @@
   function useCache(){try{const c=JSON.parse(localStorage.getItem(CACHE)||'null');if(!c?.data)return 0;window.CORA_DATA=c.data;return 1}catch(e){return 0}}
   function refresh(){try{if(typeof window.renderValues==='function')window.renderValues();if(typeof window.renderBudget==='function')window.renderBudget()}catch(e){} }
   async function sync(){try{const rs=await rows();const n=apply(rs);refresh();document.dispatchEvent(new CustomEvent('cora:official-values',{detail:{count:n,online:true}}));return n}catch(e){console.warn('Cora Família: usando últimos valores disponíveis.',e);useCache();refresh();document.dispatchEvent(new CustomEvent('cora:official-values',{detail:{count:0,online:false}}));return 0}}
-  try{localStorage.removeItem('cora_familia_valores_oficiais_v27')}catch(e){}
+  try{localStorage.removeItem('cora_familia_valores_oficiais_v27');localStorage.removeItem('cora_familia_valores_oficiais_v28')}catch(e){}
   window.CoraFamiliaGestaoSync={sync,apply,useCache,api:API,num};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{useCache();refresh();setTimeout(sync,120)});else{useCache();refresh();setTimeout(sync,120)}
 })();
