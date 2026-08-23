@@ -1,6 +1,5 @@
-(function(){
-  'use strict';
-  const reduced=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+(()=>{
+  const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches||false;
   const q=s=>document.querySelector(s);
   const qa=s=>[...document.querySelectorAll(s)];
   let pending=0,hideTimer=null;
@@ -12,10 +11,10 @@
   function setBusy(on){const bar=q('#coraNetProgress');if(!bar)return;document.documentElement.classList.toggle('cora-network-busy',on);bar.classList.toggle('show',on);document.body?.setAttribute('aria-busy',on?'true':'false')}
   function begin(){pending++;clearTimeout(hideTimer);setBusy(true)}
   function end(){pending=Math.max(0,pending-1);if(!pending)hideTimer=setTimeout(()=>setBusy(false),reduced?0:120)}
-  function wrapFetch(){if(window.__coraFetchWrapped)return;window.__coraFetchWrapped=true;const original=window.fetch.bind(window);window.fetch=function(){begin();return original.apply(window,arguments).finally(end)}}
+  function wrapFetch(){if(window.__coraFetchWrapped)return;window.__coraFetchWrapped=true;const original=window.fetch.bind(window);window.fetch=(...args)=>{begin();return original(...args).finally(end)}}
   function enhanceImages(){qa('img').forEach((img,i)=>{if(i>0&&!img.hasAttribute('loading'))img.loading='lazy';if(!img.hasAttribute('decoding'))img.decoding='async'})}
   function animatePage(page){if(reduced||!page)return;page.animate([{opacity:.65,transform:'translateY(6px)'},{opacity:1,transform:'translateY(0)'}],{duration:220,easing:'cubic-bezier(.2,.8,.2,1)'})}
-  function bindNavigation(){const obs=new MutationObserver(muts=>{for(const m of muts){if(m.type==='attributes'&&m.target.classList?.contains('page')&&m.target.classList.contains('active'))animatePage(m.target)}});qa('.page').forEach(p=>obs.observe(p,{attributes:true,attributeFilter:['class']}))}
+  function bindNavigation(){const obs=new MutationObserver(muts=>{for(const m of muts){if(m.type==='attributes'&&m.target.classList?.contains('page')&&m.target.classList.contains('active'))animatePage(m.target)}});qa('.page').forEach(p=>{obs.observe(p,{attributes:true,attributeFilter:['class']})})}
   function press(btn){if(btn.disabled)return;btn.classList.add('cora-pressed');setTimeout(()=>btn.classList.remove('cora-pressed'),reduced?0:160)}
   function bindAsyncButtons(){qa('button').forEach(btn=>{if(btn.dataset.motionBound)return;btn.dataset.motionBound='1';btn.addEventListener('click',()=>press(btn),{passive:true})});new MutationObserver(()=>qa('button').forEach(btn=>{if(!btn.dataset.motionBound){btn.dataset.motionBound='1';btn.addEventListener('click',()=>press(btn),{passive:true})}})).observe(document.body,{childList:true,subtree:true})}
   function finishBoot(){const sk=q('#coraBootSkeleton');if(!sk)return;requestAnimationFrame(()=>{sk.classList.add('done');setTimeout(()=>sk.remove(),reduced?0:260)})}
