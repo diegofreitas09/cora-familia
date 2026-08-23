@@ -1,0 +1,22 @@
+name: PR Policy
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  issue-reference:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validar referência de Issue
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s' "$PR_BODY" | grep -Eiq '(closes|fixes|refs)[[:space:]]+#[0-9]+' || {
+            echo 'O PR deve mencionar a Issue correspondente com Closes #N, Fixes #N ou Refs #N.'
+            exit 1
+          }
