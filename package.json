@@ -1,0 +1,15 @@
+{
+  "name": "cora-familia",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cora Família - qualidade, lint e testes E2E",
+  "scripts": {
+    "lint": "biome check observability-v45.js motion-professional-v44.js playwright.config.js tests",
+    "test:e2e": "playwright test",
+    "test": "npm run lint && npm run test:e2e"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.9",
+    "@playwright/test": "1.62.1"
+  }
+}
