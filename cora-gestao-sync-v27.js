@@ -1,7 +1,7 @@
 (function(){
   const API='https://script.google.com/macros/s/AKfycbwSpAtBgMjFyQ7J5yUxIfobEt0CxCGNgWEQZxp-mj9z-9zfWIcV2ig9iQlGzcCL5UYk/exec';
   const SEGMENTS=['Educação Infantil','Fundamental I','Fundamental II','Ensino Médio'];
-  const REFRESH_MS=15000;
+  const REFRESH_MS=5000;
   let lastSignature='';
   let syncing=false;
 
@@ -23,7 +23,7 @@
   }
   async function rows(){
     const u=API+'?action=listar&aba='+encodeURIComponent('Produtos 2027')+'&_='+Date.now();
-    const r=await fetch(u,{cache:'no-store',headers:{'Cache-Control':'no-cache'}});
+    const r=await fetch(u,{cache:'no-store',headers:{'Cache-Control':'no-cache','Pragma':'no-cache'}});
     if(!r.ok)throw new Error('Falha ao consultar valores oficiais');
     const j=await r.json();
     if(!j.ok)throw new Error(j.mensagem||'Falha ao consultar valores oficiais');
@@ -112,7 +112,6 @@
         document.dispatchEvent(new CustomEvent('cora:official-values',{detail:{count:n,online:true,updated:true,source:'cloud'}}));
         return n;
       }
-      document.dispatchEvent(new CustomEvent('cora:official-values',{detail:{count:0,online:true,updated:false,source:'cloud'}}));
       return 0;
     }catch(e){
       console.warn('Cora Família: não foi possível atualizar os valores oficiais.',e);
@@ -123,8 +122,9 @@
   function start(){
     sync(true);
     setInterval(()=>sync(false),REFRESH_MS);
-    window.addEventListener('focus',()=>sync(false));
-    document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync(false)});
+    window.addEventListener('focus',()=>sync(true));
+    window.addEventListener('online',()=>sync(true));
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync(true)});
   }
   try{
     Object.keys(localStorage).filter(k=>k.startsWith('cora_familia_valores_oficiais_')).forEach(k=>localStorage.removeItem(k));
