@@ -1,5 +1,5 @@
-const CACHE='cora-familia-v48';
-const CORE=['./','./index.html','./app.css','./app.js','./auth.js','./config.js','./data.js','./manifest.webmanifest','./logo-escola.png','./icon-192.png','./icon-512.png','./apple-touch-icon.png'];
+const CACHE='cora-familia-v49';
+const CORE=['./','./index.html','./app.css','./app.js','./auth.js','./config.js','./data.js','./manifest.webmanifest','./logo-escola.png','./icon-192.png','./icon-512.png','./apple-touch-icon.png','./motion-professional-v44.css','./landing-professional-v46.css','./motion-professional-v44.js','./observability-v45.js','./landing-professional-v46.js'];
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
