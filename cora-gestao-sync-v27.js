@@ -1,7 +1,7 @@
 (function(){
-  const API='https://script.google.com/macros/s/AKfycbwSpAtBgMjFyQ7J5yUxIfobEt0CxCGNgWEQZxp-mj9z-9zfWIcV2ig9iQlGzcCL5UYk/exec';
+  const API=window.CORA_CONFIG?.syncEndpoint||'https://script.google.com/macros/s/AKfycbwSpAtBgMjFyQ7J5yUxIfobEt0CxCGNgWEQZxp-mj9z-9zfWIcV2ig9iQlGzcCL5UYk/exec';
   const SEGMENTS=['Educação Infantil','Fundamental I','Fundamental II','Ensino Médio'];
-  const REFRESH_MS=5000;
+  const REFRESH_MS=60000;
   let lastSignature='';
   let syncing=false;
 
@@ -37,7 +37,11 @@
   }
   async function rows(){
     const u=API+'?action=listar&aba='+encodeURIComponent('Produtos 2027')+'&_='+Date.now();
-    const r=await fetch(u,{cache:'no-store',headers:{'Cache-Control':'no-cache','Pragma':'no-cache'}});
+    const ctrl=new AbortController();
+    const timer=setTimeout(()=>ctrl.abort(),12000);
+    let r;
+    try{r=await fetch(u,{cache:'no-store',headers:{'Cache-Control':'no-cache','Pragma':'no-cache'},signal:ctrl.signal});}
+    finally{clearTimeout(timer);}
     if(!r.ok)throw new Error('Falha ao consultar valores oficiais');
     const j=await r.json();
     if(!j.ok)throw new Error(j.mensagem||'Falha ao consultar valores oficiais');
@@ -136,6 +140,8 @@
     window.CORA_DATA.meta=window.CORA_DATA.meta||{};
     window.CORA_DATA.meta.ultimaSincronizacaoAplicada=new Date().toISOString();
     window.CORA_DATA.meta.registrosAplicados=count;
+    window.CORA_DATA.meta.sincronizacaoStatus='online';
+    window.CORA_DATA.meta.sincronizacaoErro='';
     return count;
   }
   function signature(rs){
@@ -167,6 +173,7 @@
       }
       return 0;
     }catch(e){
+      if(window.CORA_DATA?.meta){window.CORA_DATA.meta.sincronizacaoStatus='fallback-oficial';window.CORA_DATA.meta.sincronizacaoErro=e?.name==='AbortError'?'tempo esgotado':'indisponível';window.CORA_DATA.meta.ultimaTentativaSincronizacao=new Date().toISOString();}
       console.warn('Cora Família: não foi possível atualizar os valores oficiais; mantendo o fechamento local oficial.',e);
       document.dispatchEvent(new CustomEvent('cora:official-values',{detail:{count:0,online:false,updated:false,source:'fallback-oficial'}}));
       return 0;
