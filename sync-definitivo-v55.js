@@ -1,0 +1,14 @@
+(function(){
+'use strict';
+if(window.__CORA_SYNC_DEFINITIVO_V55__)return;window.__CORA_SYNC_DEFINITIVO_V55__=true;
+const API=window.CORA_CONFIG?.syncEndpoint||'https://script.google.com/macros/s/AKfycbwSpAtBgMjFyQ7J5yUxIfobEt0CxCGNgWEQZxp-mj9z-9zfWIcV2ig9iQlGzcCL5UYk/exec';
+const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+const num=v=>{if(typeof v==='number')return v;let s=String(v??'').replace(/R\$/gi,'').replace(/\s/g,'');if(s.includes(',')&&s.includes('.'))s=s.replace(/\./g,'').replace(',','.');else if(s.includes(','))s=s.replace(',','.');return Number(s)||0};
+const pick=(r,names)=>{for(const n of names)if(r&&r[n]!==undefined&&String(r[n]).trim()!=='')return r[n];const m={};Object.keys(r||{}).forEach(k=>m[norm(k)]=r[k]);for(const n of names)if(m[norm(n)]!==undefined&&String(m[norm(n)]).trim()!=='')return m[norm(n)];return''};
+function ok(r){const s=norm(pick(r,['Status','Situação','Situacao'])),p=norm(pick(r,['Publicado no Cora Família','Publicado no Cora Familia','Publicado']));return (!s||['aprovado','autorizado','publicado','ativo','sim','ok'].includes(s))&&(!p||['sim','s','true','1','publicado','ativo','ok'].includes(p))}
+function stamp(r){const v=pick(r,['Publicado em','Aprovado em','Atualizado em','Salvo em']);const d=Date.parse(String(v||'').split('/').reverse().join('-'));return Number.isFinite(d)?d:0}
+function latest(rows){const map=new Map();rows.forEach((r,i)=>{if(!ok(r))return;const id=String(pick(r,['ID'])||[pick(r,['Categoria']),pick(r,['Segmento/Turma','Segmento']),pick(r,['Produto'])].join('|'));const prev=map.get(id);const score=stamp(r)||i;if(!prev||score>=prev.score)map.set(id,{r,score})});return [...map.values()].map(x=>x.r)}
+async function run(){try{const res=await fetch(API+'?action=listar&aba='+encodeURIComponent('Produtos 2027')+'&_='+Date.now(),{cache:'no-store'});const j=await res.json();if(!j.ok||!Array.isArray(j.rows))throw Error('fonte indisponível');const rows=latest(j.rows);if(window.CoraFamiliaGestaoSync?.apply){const n=window.CoraFamiliaGestaoSync.apply(rows);window.CoraFamiliaGestaoSync.refresh?.();try{window.renderValues?.();window.renderBudget?.();window.CoraFamiliaBudgetFix?.()}catch(e){}window.CORA_DATA.meta=window.CORA_DATA.meta||{};window.CORA_DATA.meta.syncDefinitivo='v55';window.CORA_DATA.meta.syncDefinitivoEm=new Date().toISOString();return n}}catch(e){console.warn('Cora Família v55: mantendo último valor oficial válido.',e)}return 0}
+function start(){run();setInterval(run,15000);window.addEventListener('focus',run);window.addEventListener('online',run);document.addEventListener('visibilitychange',()=>{if(!document.hidden)run()})}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(start,250));else setTimeout(start,250);window.CoraSyncDefinitivoV55={run,latest,version:'55'};
+})();
