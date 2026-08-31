@@ -3,7 +3,7 @@
   const q=s=>document.querySelector(s);
   const qa=s=>[...document.querySelectorAll(s)];
   let pending=0,hideTimer=null;
-  function ensureStyle(){if(!document.querySelector('link[data-cora-motion]')){const l=document.createElement('link');l.rel='stylesheet';l.href='motion-professional-v44.css?v=1';l.dataset.coraMotion='1';document.head.appendChild(l)}}
+  function ensureStyle(){if(!document.querySelector('link[data-cora-motion],link[href*="motion-professional-v44.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='motion-professional-v44.css?v=1';l.dataset.coraMotion='1';document.head.appendChild(l)}}
   function ensureUi(){
     if(!q('#coraNetProgress')){const bar=document.createElement('div');bar.id='coraNetProgress';bar.setAttribute('aria-hidden','true');document.body.appendChild(bar)}
     if(!q('#coraBootSkeleton')){const sk=document.createElement('div');sk.id='coraBootSkeleton';sk.setAttribute('aria-hidden','true');sk.innerHTML='<div class="cora-sk-head"><i></i><span></span><b></b></div><div class="cora-sk-nav"></div><main><div class="cora-sk-hero"></div><div class="cora-sk-grid"><div></div><div></div><div></div></div></main>';document.body.appendChild(sk)}
