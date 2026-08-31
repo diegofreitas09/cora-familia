@@ -1,10 +1,10 @@
 window.CORA_DATA={
-  meta:{ano:2027,fonte:'Cora Gestão — Fechamento Oficial 2027',fechamentoGeradoEm:'24/08/2026 09:41:35',registrosSalvos:36,registrosPendentes:0},
+  meta:{ano:2027,fonte:'Cora Gestão — Fechamento Oficial 2027',fechamentoGeradoEm:'31/08/2026 19:47:02',registrosSalvos:36,registrosPendentes:0},
   mensalidades:{
-    'Educação Infantil':{anuidadeAte:6142.15,anuidadeApos:6431.28,primeira:600,planoA:{ate:461.85,apos:485.94,parcelas:12},planoB:{ate:503.83,apos:530.12,parcelas:11}},
-    'Fundamental I':{anuidadeAte:6551.65,anuidadeApos:6861.61,primeira:600,planoA:{ate:495.97,apos:521.80,parcelas:12},planoB:{ate:541.06,apos:569.24,parcelas:11}},
-    'Fundamental II':{anuidadeAte:7138.41,anuidadeApos:7478.74,primeira:600,planoA:{ate:544.87,apos:573.23,parcelas:12},planoB:{ate:594.40,apos:625.34,parcelas:11}},
-    'Ensino Médio':{anuidadeAte:7730.29,anuidadeApos:8101.33,primeira:600,planoA:{ate:594.19,apos:625.11,parcelas:12},planoB:{ate:648.21,apos:681.94,parcelas:11}}
+    'Educação Infantil':{anuidadeAte:6142.15,anuidadeApos:6431.28,primeira:599,planoA:{ate:461.93,apos:486.02,parcelas:12},planoB:{ate:503.92,apos:530.21,parcelas:11}},
+    'Fundamental I':{anuidadeAte:6551.65,anuidadeApos:6861.61,primeira:599,planoA:{ate:496.05,apos:521.88,parcelas:12},planoB:{ate:541.15,apos:569.33,parcelas:11}},
+    'Fundamental II':{anuidadeAte:7138.41,anuidadeApos:7478.74,primeira:599,planoA:{ate:544.95,apos:573.31,parcelas:12},planoB:{ate:594.49,apos:625.43,parcelas:11}},
+    'Ensino Médio':{anuidadeAte:7730.29,anuidadeApos:8101.33,primeira:599,planoA:{ate:594.27,apos:625.19,parcelas:12},planoB:{ate:648.30,apos:682.03,parcelas:11}}
   },
   series:[
     {id:'inf1',nome:'Infantil I',segmento:'Educação Infantil',material:354.42},
