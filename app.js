@@ -148,7 +148,7 @@ function shareBudget(){
   if(c.includeFirst&&!c.includeAnnual) itens.push(`1ª parcela: ${money(c.primeira)}`);
   if(c.includeMat) itens.push(`Material didático: ${money(c.material)}`);
   c.uniformes.forEach(u=>itens.push(`${u.item} x${u.qt}: ${money(u.sub)}`));
-  const txt=`Cora Família — orçamento 2026\n${c.s.nome}\n${itens.join('\n')}\nTotal estimado: ${money(c.total)}`;
+  const txt=`Cora Família — orçamento 2027\n${c.s.nome}\n${itens.join('\n')}\nTotal estimado: ${money(c.total)}`;
   if(navigator.share) navigator.share({title:'Cora Família',text:txt}).catch(()=>{});
   else navigator.clipboard?.writeText(txt).then(()=>alert('Resumo copiado.'));
 }
@@ -194,4 +194,3 @@ function init(){
   renderBudget();
 }
 init();
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));
