@@ -26,6 +26,10 @@
     for(const name of names){const v=normalized[norm(name)];if(txt(v))return v;}
     return '';
   };
+  const hasField=(row,names)=>{
+    const keys=new Set(Object.keys(row||{}).map(norm));
+    return names.some(name=>keys.has(norm(name)));
+  };
   function parseMoneyPart(text,label){
     const re=new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\s*R\\$?\\s*([0-9.,]+)','i');
     const m=txt(text).match(re);
@@ -34,6 +38,22 @@
   function parseAnyMoneyPart(text,labels){
     for(const label of labels){const v=parseMoneyPart(text,label);if(v>0)return v;}
     return 0;
+  }
+  function isAuthorized(row){
+    const statusNames=['Status','Situação','Situacao','Status do registro','Aprovação','Aprovacao','Aprovado'];
+    const publishNames=['Publicado no Cora Família','Publicado no Cora Familia','Publicado Cora Família','Publicado Cora Familia','Publicado','Publicar no Cora Família','Publicar no Cora Familia'];
+    const hasStatus=hasField(row,statusNames);
+    const hasPublish=hasField(row,publishNames);
+    if(!hasStatus&&!hasPublish)return true;
+
+    const status=norm(pick(row,statusNames));
+    const published=norm(pick(row,publishNames));
+    const approvedValues=['aprovado','aprovada','autorizado','autorizada','publicado','publicada','ativo','ativa','sim','yes','ok'];
+    const publishedValues=['sim','yes','s','true','1','publicado','publicada','ativo','ativa','ok'];
+
+    if(hasStatus&&!approvedValues.includes(status))return false;
+    if(hasPublish&&!publishedValues.includes(published))return false;
+    return true;
   }
   async function rows(){
     const u=API+'?action=listar&aba='+encodeURIComponent('Produtos 2027')+'&_='+Date.now();
@@ -99,7 +119,9 @@
   function apply(rs){
     if(!window.CORA_DATA)return 0;
     let count=0;
+    let blocked=0;
     rs.forEach(r=>{
+      if(!isAuthorized(r)){blocked++;return;}
       const cat=txt(pick(r,['Categoria']));
       const seg=txt(pick(r,['Segmento/Turma','Segmento','Turma']));
       const prod=txt(pick(r,['Produto','Item','Descrição','Descricao']));
@@ -112,7 +134,8 @@
       const segmentKey=SEGMENTS.find(x=>norm(x)===norm(seg));
       if(catN.includes('mensal')&&segmentKey){
         const m=window.CORA_DATA.mensalidades[segmentKey]||(window.CORA_DATA.mensalidades[segmentKey]={planoA:{parcelas:12},planoB:{parcelas:11}});
-        const first=parseAnyMoneyPart(parc,['1ª parcela','1a parcela','entrada']);
+        const directFirst=num(pick(r,['1ª Parcela','1a Parcela','Primeira Parcela','Primeira parcela','Entrada']));
+        const first=directFirst>0?directFirst:parseAnyMoneyPart(parc,['1ª parcela','1a parcela','primeira parcela','entrada']);
         const a=parseAnyMoneyPart(parc,['Plano A: 12 x','Plano A 12 x','Plano A — 12 x']);
         const b=parseAnyMoneyPart(parc,['Plano B: 11 x','Plano B 11 x','Plano B — 11 x']);
         const late27=parseAnyMoneyPart(obs,['Após vencimento 2027:','Apos vencimento 2027:','2027 após vencimento:','2027 apos vencimento:']);
@@ -140,6 +163,7 @@
     window.CORA_DATA.meta=window.CORA_DATA.meta||{};
     window.CORA_DATA.meta.ultimaSincronizacaoAplicada=new Date().toISOString();
     window.CORA_DATA.meta.registrosAplicados=count;
+    window.CORA_DATA.meta.registrosBloqueados=blocked;
     window.CORA_DATA.meta.sincronizacaoStatus='online';
     window.CORA_DATA.meta.sincronizacaoErro='';
     return count;
@@ -147,7 +171,10 @@
   function signature(rs){
     try{return JSON.stringify(rs.map(r=>[
       pick(r,['Categoria']),pick(r,['Segmento/Turma','Segmento','Turma']),pick(r,['Produto','Item','Descrição','Descricao']),
-      pick(r,['Valor 2027','2027','Valor']),pick(r,['Parcelamento']),pick(r,['Observação','Observacao','Obs'])
+      pick(r,['Valor 2027','2027','Valor']),pick(r,['1ª Parcela','1a Parcela','Primeira Parcela','Entrada']),
+      pick(r,['Parcelamento']),pick(r,['Observação','Observacao','Obs']),
+      pick(r,['Status','Situação','Situacao','Status do registro','Aprovação','Aprovacao','Aprovado']),
+      pick(r,['Publicado no Cora Família','Publicado no Cora Familia','Publicado Cora Família','Publicado Cora Familia','Publicado','Publicar no Cora Família','Publicar no Cora Familia'])
     ]));}
     catch(e){return String(Date.now());}
   }
@@ -168,7 +195,7 @@
         lastSignature=sig;
         const n=apply(rs);
         refresh();
-        document.dispatchEvent(new CustomEvent('cora:official-values',{detail:{count:n,online:true,updated:true,source:'cloud'}}));
+        document.dispatchEvent(new CustomEvent('cora:official-values',{detail:{count:n,blocked:window.CORA_DATA?.meta?.registrosBloqueados||0,online:true,updated:true,source:'cloud'}}));
         return n;
       }
       return 0;
@@ -189,6 +216,6 @@
   try{
     Object.keys(localStorage).filter(k=>k.startsWith('cora_familia_valores_oficiais_')).forEach(k=>localStorage.removeItem(k));
   }catch(e){}
-  window.CoraFamiliaGestaoSync={sync,apply,api:API,num,refreshMs:REFRESH_MS};
+  window.CoraFamiliaGestaoSync={sync,apply,isAuthorized,api:API,num,refreshMs:REFRESH_MS};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
