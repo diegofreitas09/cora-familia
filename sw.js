@@ -1,5 +1,5 @@
-const CACHE='cora-familia-v50';
-const CORE=['./','./index.html','./app.css','./app.js','./auth.js','./config.js','./data.js','./manifest.webmanifest','./logo-escola.png','./icon-192.png','./icon-512.png','./apple-touch-icon.png','./motion-professional-v44.css','./landing-professional-v46.css','./motion-professional-v44.js','./observability-v45.js','./landing-professional-v46.js'];
+const CACHE='cora-familia-v51';
+const CORE=['./','./index.html','./app.css','./app.js','./auth.js','./config.js','./data.js','./manifest.webmanifest','./logo-escola.png','./icon-192.png','./icon-512.png','./apple-touch-icon.png','./motion-professional-v44.css','./landing-professional-v46.css','./motion-professional-v44.js','./observability-v45.js','./landing-professional-v46.js','./cora-gestao-sync-v27.js','./orcamento-primeira-fix-v29.js','./orcamentos-registro-v30.js','./orcamento-verificacao-v35.js','./orcamento-save-v37.js','./pdf-unificado-v37.js','./pdf-condicoes-v38.js','./pdf-download.js','./pdf-final-fix-v40.js'];
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
