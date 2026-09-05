@@ -1,0 +1,15 @@
+{
+  "id": "/cora-familia/familia360/master/",
+  "name": "Família 360 Mestre",
+  "short_name": "F360 Mestre",
+  "description": "Painel Mestre do Família 360",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#061722",
+  "theme_color": "#071a24",
+  "orientation": "portrait",
+  "icons": [
+    {"src":"../icons/master.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
+}
