@@ -1,0 +1,15 @@
+{
+  "id": "/cora-familia/familia360/pessoa/",
+  "name": "Família 360",
+  "short_name": "Família 360",
+  "description": "Compartilhamento e segurança do Família 360",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#eef9fb",
+  "theme_color": "#eef9fb",
+  "orientation": "portrait",
+  "icons": [
+    {"src":"../icons/pessoa.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
+}
