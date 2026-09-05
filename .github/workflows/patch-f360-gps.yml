@@ -1,0 +1,57 @@
+name: Patch Familia 360 GPS
+
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-f360-gps.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch pessoa GPS flow
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('familia360/pessoa/index.html')
+          s = p.read_text(encoding='utf-8')
+
+          old = "deviceName:'Celular Android',platform:platform(),browser:browser()"
+          new = "deviceName:(platform()==='iOS'?'iPhone':platform()==='Android'?'Celular Android':'Dispositivo'),platform:platform(),browser:browser()"
+          if old in s:
+              s = s.replace(old, new)
+
+          old = "await start()}catch(e){msg('linkMsg',e.message)}finally{$('linkBtn').disabled=false}"
+          new = "await start();setTimeout(()=>{if(dev?.location_sharing_enabled&&watchId==null)startLoc()},350)}catch(e){msg('linkMsg',e.message)}finally{$('linkBtn').disabled=false}"
+          if old in s:
+              s = s.replace(old, new)
+
+          old = "await recover();await initBattery();await heartbeat();await loadRequests();await loadCheckins();"
+          new = "await recover();await initBattery();await heartbeat();if(dev?.location_sharing_enabled&&watchId==null)setTimeout(startLoc,350);await loadRequests();await loadCheckins();"
+          if old in s:
+              s = s.replace(old, new)
+
+          old = "document.addEventListener('visibilitychange',()=>{if(!document.hidden)heartbeat()});"
+          new = "document.addEventListener('visibilitychange',()=>{if(!document.hidden){heartbeat();if(dev?.location_sharing_enabled&&watchId==null)startLoc()}});"
+          if old in s:
+              s = s.replace(old, new)
+
+          old = "async()=>{dev.location_permission='denied';dev.location_sharing_enabled=false;render();await savePerms();msg('locMsg','Localização não autorizada.')}"
+          new = "async e=>{if(e?.code===1){dev.location_permission='denied';dev.location_sharing_enabled=false;render();await savePerms();msg('locMsg','Localização não autorizada. Ative a permissão de localização no navegador.')}else{dev.location_permission='granted';render();msg('locMsg','GPS ainda não retornou posição. Verifique se a localização do aparelho está ligada e tente novamente.')}}"
+          if old in s:
+              s = s.replace(old, new)
+
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name 'chatgpt-bot'
+          git config user.email 'chatgpt-bot@users.noreply.github.com'
+          git add familia360/pessoa/index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'fix(familia360): iniciar GPS automaticamente no membro'
+          git push
