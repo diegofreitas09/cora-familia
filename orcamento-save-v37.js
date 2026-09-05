@@ -25,8 +25,42 @@
     if(typeof window.calcBudget!=='function'){if(st)st.textContent='Orçamento indisponível.';return}
     const c=window.calcBudget(),id=uid(),dataHora=new Date().toLocaleString('pt-BR',{timeZone:'America/Fortaleza'});
     if(!c||c.count===0){if(st){st.className='orc-status err';st.textContent='Selecione pelo menos um item.'}return}
-    const itens=[];if(c.includeAnnual)itens.push(`Anuidade R$ ${Number(c.anuidade).toLocaleString('pt-BR',{minimumFractionDigits:2})}`);if(c.includeFirst&&!c.includeAnnual)itens.push(`1ª parcela R$ ${Number(c.primeira).toLocaleString('pt-BR',{minimumFractionDigits:2})}`);if(c.includeMat)itens.push(`Material didático R$ ${Number(c.material).toLocaleString('pt-BR',{minimumFractionDigits:2})}`);(c.uniformes||[]).forEach(u=>itens.push(`${u.item} x${u.qt} R$ ${Number(u.sub).toLocaleString('pt-BR',{minimumFractionDigits:2})}`));
-    const data={'ID':id,'Data/Hora':dataHora,'Responsável':responsavel,'Aluno':aluno,'Data de nascimento':dateBR(nasc),'Idade':age(nasc),'Série/Segmento':c.s?.nome||'','Plano':c.plano==='A'?'Plano A — 1ª + 12 parcelas':'Plano B — 1ª + 11 parcelas','Condição':c.cond==='ate'?'Até o vencimento':'Após o vencimento','1ª Parcela':safe(c.primeira),'Mensalidade/Parcela':safe(c.mensal),'Quantidade parcelas':safe(c.parcelas),'Anuidade':safe(c.anuidade),'Material didático':safe(c.includeMat?c.material:0),'Fardamento':safe(c.uniformTotal),'Total orçamento':safe(c.total),'Itens selecionados':itens.join(' | '),'Origem':'Cora Família','Observações':obs};
+    const itens=[];
+    if(c.includeAnnual)itens.push(`Anuidade R$ ${Number(c.anuidade).toLocaleString('pt-BR',{minimumFractionDigits:2})}`);
+    if(c.includeFirst&&!c.includeAnnual)itens.push(`1ª parcela R$ ${Number(c.primeira).toLocaleString('pt-BR',{minimumFractionDigits:2})}`);
+    if(c.includeMat)itens.push(`Material didático R$ ${Number(c.material).toLocaleString('pt-BR',{minimumFractionDigits:2})}`);
+    (c.uniformes||[]).forEach(u=>itens.push(`${u.item} x${u.qt} R$ ${Number(u.sub).toLocaleString('pt-BR',{minimumFractionDigits:2})}`));
+    (c.sti||[]).forEach(u=>itens.push(`${u.item}${u.qt>1?' x'+u.qt:''} R$ ${Number(u.sub).toLocaleString('pt-BR',{minimumFractionDigits:2})}${u.parcelamento?' • '+u.parcelamento:''}`));
+    const stiServico=(c.sti||[]).find(x=>x.tipo==='servico')||null;
+    const stiFardas=(c.sti||[]).filter(x=>x.tipo==='fardamento');
+    const stiFardamentoTotal=stiFardas.reduce((s,x)=>s+safe(x.sub),0);
+    const data={
+      'ID':id,
+      'Data/Hora':dataHora,
+      'Responsável':responsavel,
+      'Aluno':aluno,
+      'Data de nascimento':dateBR(nasc),
+      'Idade':age(nasc),
+      'Série/Segmento':c.s?.nome||'',
+      'Plano':c.plano==='A'?'Plano A — 1ª + 12 parcelas':'Plano B — 1ª + 11 parcelas',
+      'Condição':c.cond==='ate'?'Até o vencimento':'Após o vencimento',
+      '1ª Parcela':safe(c.primeira),
+      'Mensalidade/Parcela':safe(c.mensal),
+      'Quantidade parcelas':safe(c.parcelas),
+      'Anuidade':safe(c.anuidade),
+      'Material didático':safe(c.includeMat?c.material:0),
+      'Fardamento':safe(c.uniformTotal),
+      'Modalidade STI':c.stiModalidade||'Sem STI',
+      'Produto STI':c.stiProduto||stiServico?.item||'',
+      'Parcelamento STI':c.stiParcelamento||stiServico?.parcelamento||'',
+      'STI / Tempo Integral':safe(c.stiTotal),
+      'Fardamento STI':safe(stiFardamentoTotal),
+      'Itens STI':(c.sti||[]).map(x=>`${x.item}${x.qt>1?' x'+x.qt:''} = R$ ${safe(x.sub).toLocaleString('pt-BR',{minimumFractionDigits:2})}`).join(' | '),
+      'Total orçamento':safe(c.total),
+      'Itens selecionados':itens.join(' | '),
+      'Origem':'Cora Família',
+      'Observações':obs
+    };
     if(btn)btn.disabled=true;if(st){st.className='orc-status wait';st.textContent='Salvando orçamento e o mesmo PDF no Drive...'}
     try{
       await post({action:'salvarRegistro',aba:SHEET,id,data});
