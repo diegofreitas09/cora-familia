@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   lint:
@@ -31,3 +31,23 @@ jobs:
       - name: Start static server
         run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/cora-http.log 2>&1 &
       - run: npm run test:e2e
+
+  deploy_familia360_v4:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [lint, e2e]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build audited Família 360 v4 files
+        run: python3 .github/scripts/deploy_f360_v4.py
+      - name: Commit audited Família 360 v4
+        run: |
+          git config user.name 'chatgpt-f360'
+          git config user.email 'chatgpt-f360@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'No changes to deploy.'
+          else
+            git commit -m 'feat(familia360): consolidate audited v4 apps'
+            git push
+          fi
