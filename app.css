@@ -8,3 +8,11 @@
 #instaLink .ico::before{content:"";width:27px;height:27px;border:3px solid #fff;border-radius:8px;display:block;position:absolute;inset:0;margin:auto}
 #instaLink .ico::after{content:"";width:9px;height:9px;border:3px solid #fff;border-radius:50%;display:block;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);box-shadow:9px -9px 0 -2px #fff}
 #instaLink:hover .ico{transform:scale(1.04)}
+
+/* A interface usa somente a identidade visual do Cora e os créditos da PDF. */
+#nl-badge-frame{
+  display:none!important;
+  visibility:hidden!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
