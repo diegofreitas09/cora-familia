@@ -1,0 +1,14 @@
+(function(){'use strict';
+if(window.__CORA_CLOUD_V71__)return;window.__CORA_CLOUD_V71__=true;
+const API=window.CORA_CONFIG&&window.CORA_CONFIG.syncEndpoint,CACHE_KEY='cora_familia_catalogo_confirmado_v71',INTERVAL=300000,TIMEOUT=60000;
+let running=false,retryTimer=0,lastConfirmed=null,overlapBlocked=0;
+const norm=v=>String(v==null?'':v).trim().toUpperCase();
+const authorized=row=>norm(row.Status)==='APROVADO'&&norm(row['Publicado no Cora Família']||row['Publicado no Cora Familia'])==='SIM';
+function readCache(){try{return JSON.parse(localStorage.getItem(CACHE_KEY)||'null')}catch(e){return null}}
+function apply(rows,meta){window.CORA_DATA=window.CORA_DATA||{};window.CORA_DATA.produtos=rows;window.CORA_DATA.meta={...(window.CORA_DATA.meta||{}),catalogoProdutos:rows.length,catalogoProdutosEm:meta.at,fonte:meta.fonte,versao:'71'};document.dispatchEvent(new CustomEvent('cora:official-values',{detail:{rows,meta}}))}
+async function fetchJson(url){const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),TIMEOUT);try{const response=await fetch(url,{cache:'no-store',signal:controller.signal});if(!response.ok)throw new Error(`HTTP ${response.status}`);const json=await response.json();if(!json.ok||!Array.isArray(json.rows))throw new Error(json.mensagem||'Resposta inválida');return json}finally{clearTimeout(timeout)}}
+async function sync(reason='scheduled'){if(running){overlapBlocked++;return {ok:false,blocked:true}}running=true;clearTimeout(retryTimer);try{const json=await fetchJson(`${API}?action=listar&aba=${encodeURIComponent('Produtos 2027')}&_=${Date.now()}`),rows=json.rows.filter(authorized),snapshot={at:new Date().toISOString(),fonte:'nuvem',totalRecebido:json.rows.length,rows};localStorage.setItem(CACHE_KEY,JSON.stringify(snapshot));lastConfirmed=snapshot;apply(rows,snapshot);document.dispatchEvent(new CustomEvent('cora:cloud-confirmed',{detail:{reason,total:json.rows.length,authorized:rows.length,overlapBlocked}}));return {ok:true,total:json.rows.length,authorized:rows.length}}catch(error){const cached=lastConfirmed||readCache();if(cached&&Array.isArray(cached.rows))apply(cached.rows,{...cached,fonte:'último catálogo confirmado'});retryTimer=setTimeout(()=>sync('retry-after-failure'),30000);document.dispatchEvent(new CustomEvent('cora:cloud-failed',{detail:{reason,message:error.message}}));return {ok:false,error:error.message}}finally{running=false}}
+function start(){const cached=readCache();if(cached&&Array.isArray(cached.rows)){lastConfirmed=cached;apply(cached.rows,{...cached,fonte:'último catálogo confirmado'})}sync('open');setInterval(()=>sync('five-minutes'),INTERVAL)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
+window.CoraCloudV71={sync,get running(){return running},get overlapBlocked(){return overlapBlocked},version:'71'};
+})();
