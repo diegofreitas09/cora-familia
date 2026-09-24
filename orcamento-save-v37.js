@@ -17,7 +17,7 @@
   function dateBR(v){const p=parseData(v);if(!p)return String(v||'');const pad=n=>String(n).padStart(2,'0');return `${pad(p.d)}/${pad(p.m)}/${p.y}`}
   async function post(payload){await fetch(API,{method:'POST',mode:'no-cors',cache:'no-store',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})}
   async function confirmar(id){for(let i=0;i<4;i++){await new Promise(r=>setTimeout(r,700));try{const r=await fetch(API+'?action=listar&aba='+encodeURIComponent(SHEET)+'&_='+Date.now(),{cache:'no-store'}),j=await r.json(),rows=Array.isArray(j.rows)?j.rows:[];if(rows.some(x=>String(x.ID||'')===id))return rows.length}catch(e){}}return false}
-  async function salvar(){
+  async function salvar(opts={}){
     const st=q('orcSaveStatus'),btn=q('saveQuote');
     const responsavel=(q('orcResponsavel')?.value||'').trim(),aluno=(q('orcAluno')?.value||'').trim(),nasc=q('orcNascimento')?.value||'',obs=(q('orcObservacoes')?.value||'').trim();
     if(!responsavel||!aluno||!nasc){if(st){st.className='orc-status err';st.textContent='Preencha responsável, aluno e data de nascimento.'}return}
@@ -64,12 +64,13 @@
     if(btn)btn.disabled=true;if(st){st.className='orc-status wait';st.textContent='Salvando orçamento e o mesmo PDF no Drive...'}
     try{
       await post({action:'salvarRegistro',aba:SHEET,id,data});
-      let pdf=null;if(window.CoraPdfV37?.gerar)pdf=await window.CoraPdfV37.gerar({download:false,id,dataHora});
+      let pdf=null;if(window.CoraPdfV37?.gerar)pdf=await window.CoraPdfV37.gerar({download:!!opts.downloadLocal,id,dataHora});
       if(pdf?.base64)await post({action:'salvarPdfBase64',id,filename:pdf.filename,pdfBase64:pdf.base64});else await post({action:'salvarPdfOrcamento',id,data});
       const total=await confirmar(id);localStorage.setItem('coraFamiliaUltimoOrcamento',JSON.stringify({id,data}));
       if(total!==false){if(st){st.className='orc-status ok';st.textContent=`✅ Orçamento confirmado na planilha e PDF enviado ao Drive • ${total} atendimento${total===1?'':'s'}.`}if(q('orcCounter'))q('orcCounter').textContent=`${total} orçamentos registrados`}else{if(st){st.className='orc-status err';st.textContent='⚠️ O envio foi feito, mas ainda não consegui confirmar o registro na planilha.'}}
     }catch(e){console.error(e);if(st){st.className='orc-status err';st.textContent='Não foi possível salvar agora.'}}finally{if(btn)btn.disabled=false}
   }
-  function bind(){const b=q('saveQuote');if(b&&b.dataset.v37!=='1'){b.dataset.v37='1';b.textContent='💾 Salvar orçamento + PDF';b.onclick=salvar}}
+  function bind(){const b=q('saveQuote');if(b&&b.dataset.v37!=='1'){b.dataset.v37='1';b.textContent='💾 Salvar orçamento + PDF';b.onclick=()=>salvar({downloadLocal:false})}}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(bind,80));else setTimeout(bind,80);new MutationObserver(bind).observe(document.documentElement,{childList:true,subtree:true});
+  window.CoraSaveV37={salvar};
 })();
