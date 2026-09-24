@@ -19,8 +19,8 @@
   async function confirmar(id){for(let i=0;i<4;i++){await new Promise(r=>setTimeout(r,700));try{const r=await fetch(API+'?action=listar&aba='+encodeURIComponent(SHEET)+'&_='+Date.now(),{cache:'no-store'}),j=await r.json(),rows=Array.isArray(j.rows)?j.rows:[];if(rows.some(x=>String(x.ID||'')===id))return rows.length}catch(e){}}return false}
   async function salvar(opts={}){
     const st=q('orcSaveStatus'),btn=q('saveQuote');
-    const responsavel=(q('orcResponsavel')?.value||'').trim(),aluno=(q('orcAluno')?.value||'').trim(),nasc=q('orcNascimento')?.value||'',obs=(q('orcObservacoes')?.value||'').trim();
-    if(!responsavel||!aluno||!nasc){if(st){st.className='orc-status err';st.textContent='Preencha responsável, aluno e data de nascimento.'}return}
+    const responsavel=(q('orcResponsavel')?.value||'').trim(),contato=(q('orcContatoResponsavel')?.value||'').trim(),aluno=(q('orcAluno')?.value||'').trim(),nasc=q('orcNascimento')?.value||'',obs=(q('orcObservacoes')?.value||'').trim();
+    if(!responsavel||!contato||!aluno||!nasc){if(st){st.className='orc-status err';st.textContent='Preencha responsável, contato, aluno e data de nascimento.'}return}
     if(!parseData(nasc)){if(st){st.className='orc-status err';st.textContent='Informe uma data de nascimento válida no formato DD/MM/AAAA.'}return}
     if(typeof window.calcBudget!=='function'){if(st)st.textContent='Orçamento indisponível.';return}
     const c=window.calcBudget(),id=uid(),dataHora=new Date().toLocaleString('pt-BR',{timeZone:'America/Fortaleza'});
@@ -38,6 +38,7 @@
       'ID':id,
       'Data/Hora':dataHora,
       'Responsável':responsavel,
+      'Contato do responsável':contato,
       'Aluno':aluno,
       'Data de nascimento':dateBR(nasc),
       'Idade':age(nasc),
