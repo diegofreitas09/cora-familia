@@ -31,25 +31,29 @@ test('mantém valores essenciais do orçamento em formato monetário', async ({ 
   expect(first).not.toContain('58.000.000');
 });
 
-test('bloqueia catálogo sem aprovação e publicação explícitas', async ({ page }) => {
-  await page.goto('/');
-  const result = await page.evaluate(() => {
-    const isAuthorized = window.CoraFamiliaGestaoSync?.isAuthorized;
-    if (typeof isAuthorized !== 'function') return { available: false };
-    return {
-      available: true,
-      empty: isAuthorized({}),
-      onlyApproved: isAuthorized({ Status: 'APROVADO' }),
-      onlyPublished: isAuthorized({ 'Publicado no Cora Família': 'SIM' }),
-      approvedAndPublished: isAuthorized({ Status: 'APROVADO', 'Publicado no Cora Família': 'SIM' }),
-      draft: isAuthorized({ Status: 'RASCUNHO', 'Publicado no Cora Família': 'NÃO' })
-    };
+test('catálogo ativo aceita somente APROVADO + SIM', async ({ page }) => {
+  await page.route('**/macros/s/**', async route => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.get('action') === 'listar' && url.searchParams.get('aba') === 'Produtos 2027') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ok: true,
+          rows: [
+            { ID: 'A', Categoria: 'Mensalidade' },
+            { ID: 'B', Categoria: 'Mensalidade', Status: 'APROVADO' },
+            { ID: 'C', Categoria: 'Mensalidade', 'Publicado no Cora Família': 'SIM' },
+            { ID: 'D', Categoria: 'Mensalidade', Status: 'RASCUNHO', 'Publicado no Cora Família': 'NÃO' },
+            { ID: 'E', Categoria: 'Mensalidade', Status: 'APROVADO', 'Publicado no Cora Família': 'SIM' }
+          ]
+        })
+      });
+      return;
+    }
+    await route.continue();
   });
-  expect(result.available).toBe(true);
-  expect(result.empty).toBe(false);
-  expect(result.onlyApproved).toBe(false);
-  expect(result.onlyPublished).toBe(false);
-  expect(result.approvedAndPublished).toBe(true);
-  expect(result.draft).toBe(false);
+  await page.goto('/');
+  await expect.poll(async () => page.evaluate(() => window.CORA_DATA?.produtos?.map(r => r.ID) || []))
+    .toEqual(['E']);
 });
-
