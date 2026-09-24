@@ -1,0 +1,53 @@
+name: Security Audit Readonly
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  worker-readonly:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe Cora Família auth worker safely
+        shell: python
+        run: |
+          import json
+          import re
+          import urllib.parse
+          import urllib.request
+          from pathlib import Path
+
+          source = Path("config.js").read_text(encoding="utf-8")
+          match = re.search(r"feedbackEndpoint\s*:\s*['\"](https://[^'\"]+)['\"]", source)
+          if not match:
+              raise SystemExit("feedbackEndpoint not found")
+          api = match.group(1)
+
+          def request(params):
+              url = api + "?" + urllib.parse.urlencode(params)
+              req = urllib.request.Request(url, headers={"User-Agent":"Cora-Security-Audit/1.0"})
+              with urllib.request.urlopen(req, timeout=30) as r:
+                  headers = {k.lower():v for k,v in r.headers.items()}
+                  body = json.loads(r.read().decode("utf-8"))
+                  return r.status, headers, body
+
+          status, headers, base = request({})
+          print("WORKER_BASE_HTTP=" + str(status))
+          print("WORKER_CORS=" + str(bool(headers.get("access-control-allow-origin"))).lower())
+          print("WORKER_CSP=" + str(bool(headers.get("content-security-policy"))).lower())
+          print("WORKER_XCTO=" + str(bool(headers.get("x-content-type-options"))).lower())
+
+          status, headers, auth = request({
+              "action":"validarAcesso",
+              "matricula":"AUDIT-NONEXIST-20260924",
+              "nome":"AUDIT NONEXIST USER",
+              "serie":"AUDIT"
+          })
+          print("WORKER_AUTH_HTTP=" + str(status))
+          print("WORKER_INVALID_AUTHORIZED=" + str(bool(auth.get("autorizado"))).lower())
+          print("WORKER_AUTH_OK_FIELD=" + str(bool(auth.get("ok"))).lower())
