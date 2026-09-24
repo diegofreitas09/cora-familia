@@ -8,9 +8,9 @@
       ev.stopImmediatePropagation();
       const old=b.innerHTML;
       try{
-        if(!window.CoraPdfV37||typeof window.CoraPdfV37.gerar!=='function')throw new Error('Gerador oficial de PDF ainda não carregou.');
-        b.disabled=true;b.textContent='Gerando PDF...';
-        await window.CoraPdfV37.gerar({download:true});
+        if(!window.CoraSaveV37||typeof window.CoraSaveV37.salvar!=='function')throw new Error('Salvamento do atendimento ainda não carregou.');
+        b.disabled=true;b.textContent='Salvando e gerando PDF...';
+        await window.CoraSaveV37.salvar({downloadLocal:true});
       }catch(e){console.error(e);alert(e.message||'Não foi possível gerar o PDF agora.');}
       finally{b.disabled=false;b.innerHTML=old;}
     },true);
