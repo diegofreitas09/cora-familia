@@ -30,3 +30,26 @@ test('mantém valores essenciais do orçamento em formato monetário', async ({ 
   const first = await page.locator('#primeiraVal').innerText();
   expect(first).not.toContain('58.000.000');
 });
+
+test('bloqueia catálogo sem aprovação e publicação explícitas', async ({ page }) => {
+  await page.goto('/');
+  const result = await page.evaluate(() => {
+    const isAuthorized = window.CoraFamiliaGestaoSync?.isAuthorized;
+    if (typeof isAuthorized !== 'function') return { available: false };
+    return {
+      available: true,
+      empty: isAuthorized({}),
+      onlyApproved: isAuthorized({ Status: 'APROVADO' }),
+      onlyPublished: isAuthorized({ 'Publicado no Cora Família': 'SIM' }),
+      approvedAndPublished: isAuthorized({ Status: 'APROVADO', 'Publicado no Cora Família': 'SIM' }),
+      draft: isAuthorized({ Status: 'RASCUNHO', 'Publicado no Cora Família': 'NÃO' })
+    };
+  });
+  expect(result.available).toBe(true);
+  expect(result.empty).toBe(false);
+  expect(result.onlyApproved).toBe(false);
+  expect(result.onlyPublished).toBe(false);
+  expect(result.approvedAndPublished).toBe(true);
+  expect(result.draft).toBe(false);
+});
+
