@@ -39,6 +39,8 @@ jobs:
           status, headers, base = request({})
           print("WORKER_BASE_HTTP=" + str(status))
           print("WORKER_CORS=" + str(bool(headers.get("access-control-allow-origin"))).lower())
+          print("WORKER_CORS_ORIGIN=" + str(headers.get("access-control-allow-origin") or "absent"))
+          print("WORKER_CORS_METHODS=" + str(headers.get("access-control-allow-methods") or "absent"))
           print("WORKER_CSP=" + str(bool(headers.get("content-security-policy"))).lower())
           print("WORKER_XCTO=" + str(bool(headers.get("x-content-type-options"))).lower())
 
@@ -51,3 +53,23 @@ jobs:
           print("WORKER_AUTH_HTTP=" + str(status))
           print("WORKER_INVALID_AUTHORIZED=" + str(bool(auth.get("autorizado"))).lower())
           print("WORKER_AUTH_OK_FIELD=" + str(bool(auth.get("ok"))).lower())
+
+          # OPTIONS preflight only; no credentials or personal data and no application mutation.
+          try:
+              preflight = urllib.request.Request(
+                  api,
+                  method="OPTIONS",
+                  headers={
+                      "User-Agent":"Cora-Security-Audit/1.0",
+                      "Origin":"https://diegofreitas09.github.io",
+                      "Access-Control-Request-Method":"POST",
+                      "Access-Control-Request-Headers":"content-type",
+                  },
+              )
+              with urllib.request.urlopen(preflight, timeout=30) as r:
+                  ph = {k.lower():v for k,v in r.headers.items()}
+                  print("WORKER_OPTIONS_HTTP=" + str(r.status))
+                  print("WORKER_OPTIONS_ALLOW_ORIGIN=" + str(ph.get("access-control-allow-origin") or "absent"))
+                  print("WORKER_OPTIONS_ALLOW_METHODS=" + str(ph.get("access-control-allow-methods") or "absent"))
+          except Exception as exc:
+              print("WORKER_OPTIONS_ERROR=" + type(exc).__name__)
