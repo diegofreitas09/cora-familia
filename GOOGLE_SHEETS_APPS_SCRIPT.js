@@ -17,6 +17,12 @@ function respostaJson_(obj, callback) {
   return ContentService.createTextOutput(texto).setMimeType(ContentService.MimeType.JSON);
 }
 
+function safeTextForSheet_(value, maxLength) {
+  let text = String(value == null ? '' : value).trim();
+  if (maxLength && text.length > maxLength) text = text.slice(0, maxLength);
+  return /^\s*[=+\-@]/.test(text) ? "'" + text : text;
+}
+
 function doGet(e) {
   try {
     const p=(e&&e.parameter)||{};
@@ -97,9 +103,18 @@ function doPost(e) {
       sh.appendRow(['Data/Hora','Responsável','Funcionário','Canal','Estrelas','Mensagem','Origem','Status']);
     }
     const d=JSON.parse((e&&e.postData&&e.postData.contents)||'{}');
+    const canais=['Presencial','WhatsApp','Telefone','Instagram','Outro'];
+    const estrelas=Math.max(0,Math.min(5,Number(d.estrelas)||0));
+    const canal=canais.indexOf(String(d.canal||''))>=0?String(d.canal):'Outro';
     sh.appendRow([
       Utilities.formatDate(new Date(),'America/Fortaleza','dd/MM/yyyy HH:mm:ss'),
-      d.responsavel||d.nome||'',d.funcionario||'',d.canal||'',d.estrelas||'',d.mensagem||'',d.origem||'Cora Família','Recebido'
+      safeTextForSheet_(d.responsavel||d.nome||'',120),
+      safeTextForSheet_(d.funcionario||'',120),
+      canal,
+      estrelas,
+      safeTextForSheet_(d.mensagem||'',2000),
+      safeTextForSheet_(d.origem||'Cora Família',80),
+      'Recebido'
     ]);
     return respostaJson_({ok:true});
   } catch (erro) {

@@ -44,7 +44,7 @@
     const publishNames=['Publicado no Cora Família','Publicado no Cora Familia','Publicado Cora Família','Publicado Cora Familia','Publicado','Publicar no Cora Família','Publicar no Cora Familia'];
     const hasStatus=hasField(row,statusNames);
     const hasPublish=hasField(row,publishNames);
-    if(!hasStatus&&!hasPublish)return true;
+    if(!hasStatus||!hasPublish)return false;
 
     const status=norm(pick(row,statusNames));
     const published=norm(pick(row,publishNames));
