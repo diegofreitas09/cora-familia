@@ -135,7 +135,10 @@ function setupFeedback(){
     };
     try{
       status.textContent='Enviando...';
-      await fetch(CORA_CONFIG.feedbackEndpoint,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const resp=await fetch(CORA_CONFIG.feedbackEndpoint,{method:'POST',mode:'cors',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      if(!resp.ok) throw new Error('HTTP '+resp.status);
+      const result=await resp.json().catch(()=>null);
+      if(!result||result.ok!==true) throw new Error('Persistência não confirmada');
       status.textContent='✅ Avaliação enviada. Obrigado!';
       if(q('fbMsg')) q('fbMsg').value='';
     }catch(e){status.textContent='Não foi possível enviar agora.';}
